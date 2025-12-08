@@ -1,0 +1,249 @@
+[
+    {
+        "ticker": "AAPL",
+        "name": "Apple Inc.",
+        "aliases": [
+            "Apple",
+            "App",
+            "Mac",
+            "iPhone",
+            "iPad"
+        ],
+        "exchange": "NAS",
+        "type": "Equity"
+    },
+    {
+        "ticker": "MSFT",
+        "name": "Microsoft Corporation",
+        "aliases": [
+            "Microsoft",
+            "Micro",
+            "Windows",
+            "Soft",
+            "Office"
+        ],
+        "exchange": "NAS",
+        "type": "Equity"
+    },
+    {
+        "ticker": "TSLA",
+        "name": "Tesla, Inc.",
+        "aliases": [
+            "Tesla",
+            "Elon",
+            "Musk",
+            "EV",
+            "Car"
+        ],
+        "exchange": "NAS",
+        "type": "Equity"
+    },
+    {
+        "ticker": "AMZN",
+        "name": "Amazon.com, Inc.",
+        "aliases": [
+            "Amazon",
+            "Prime",
+            "AWS",
+            "Jeff",
+            "Bezos"
+        ],
+        "exchange": "NAS",
+        "type": "Equity"
+    },
+    {
+        "ticker": "GOOGL",
+        "name": "Alphabet Inc.",
+        "aliases": [
+            "Google",
+            "Alphabet",
+            "Search",
+            "Android",
+            "YouTube"
+        ],
+        "exchange": "NAS",
+        "type": "Equity"
+    },
+    {
+        "ticker": "NVDA",
+        "name": "NVIDIA Corporation",
+        "aliases": [
+            "Nvidia",
+            "AI",
+            "GPU",
+            "Graphics"
+        ],
+        "exchange": "NAS",
+        "type": "Equity"
+    },
+    {
+        "ticker": "META",
+        "name": "Meta Platforms, Inc.",
+        "aliases": [
+            "Meta",
+            "Facebook",
+            "Instagram",
+            "WhatsApp",
+            "Zuck"
+        ],
+        "exchange": "NAS",
+        "type": "Equity"
+    },
+    {
+        "ticker": "NFLX",
+        "name": "Netflix, Inc.",
+        "aliases": [
+            "Netflix",
+            "Chill",
+            "Streaming"
+        ],
+        "exchange": "NAS",
+        "type": "Equity"
+    },
+    {
+        "ticker": "AMD",
+        "name": "Advanced Micro Devices, Inc.",
+        "aliases": [
+            "AMD",
+            "Ryzen",
+            "Radeon",
+            "Lisa Su"
+        ],
+        "exchange": "NAS",
+        "type": "Equity"
+    },
+    {
+        "ticker": "INTC",
+        "name": "Intel Corporation",
+        "aliases": [
+            "Intel",
+            "Inside",
+            "Chip"
+        ],
+        "exchange": "NAS",
+        "type": "Equity"
+    },
+    {
+        "ticker": "PYPL",
+        "name": "PayPal Holdings, Inc.",
+        "aliases": [
+            "PayPal",
+            "Payment"
+        ],
+        "exchange": "NAS",
+        "type": "Equity"
+    },
+    {
+        "ticker": "ADBE",
+        "name": "Adobe Inc.",
+        "aliases": [
+            "Adobe",
+            "Photoshop",
+            "PDF",
+            "Creative"
+        ],
+        "exchange": "NAS",
+        "type": "Equity"
+    },
+    {
+        "ticker": "CSCO",
+        "name": "Cisco Systems, Inc.",
+        "aliases": [
+            "Cisco",
+            "Networking"
+        ],
+        "exchange": "NAS",
+        "type": "Equity"
+    },
+    {
+        "ticker": "PEP",
+        "name": "PepsiCo, Inc.",
+        "aliases": [
+            "Pepsi",
+            "Soda",
+            "Chips"
+        ],
+        "exchange": "NAS",
+        "type": "Equity"
+    },
+    {
+        "ticker": "KO",
+        "name": "The Coca-Cola Company",
+        "aliases": [
+            "Coca Cola",
+            "Coke",
+            "Soda"
+        ],
+        "exchange": "NYQ",
+        "type": "Equity"
+    },
+    {
+        "ticker": "DIS",
+        "name": "The Walt Disney Company",
+        "aliases": [
+            "Disney",
+            "Mouse",
+            "Marvel",
+            "Pixar",
+            "Star Wars"
+        ],
+        "exchange": "NYQ",
+        "type": "Equity"
+    },
+    {
+        "ticker": "JPM",
+        "name": "JPMorgan Chase & Co.",
+        "aliases": [
+            "JPM",
+            "JPMorgan",
+            "Chase",
+            "Bank"
+        ],
+        "exchange": "NYQ",
+        "type": "Equity"
+    },
+    {
+        "ticker": "V",
+        "name": "Visa Inc.",
+        "aliases": [
+            "Visa",
+            "Credit Card"
+        ],
+        "exchange": "NYQ",
+        "type": "Equity"
+    },
+    {
+        "ticker": "JNJ",
+        "name": "Johnson & Johnson",
+        "aliases": [
+            "Johnson",
+            "JNJ",
+            "Pharma",
+            "Baby"
+        ],
+        "exchange": "NYQ",
+        "type": "Equity"
+    },
+    {
+        "ticker": "WMT",
+        "name": "Walmart Inc.",
+        "aliases": [
+            "Walmart",
+            "Retail",
+            "Groceries"
+        ],
+        "exchange": "NYQ",
+        "type": "Equity"
+    },
+    {
+        "ticker": "PG",
+        "name": "Procter & Gamble Company",
+        "aliases": [
+            "P&G",
+            "Procter",
+            "Gamble"
+        ],
+        "exchange": "NYQ",
+        "type": "Equity"
+    }
+]
