@@ -10,6 +10,9 @@ import AssetAnalysisWindow from './pages/AssetAnalysisWindow';
 import CotAnalysis from './pages/CotAnalysis';
 import Screener from './pages/Screener';
 import HomePage from './pages/HomePage';
+import Calculators from './pages/Calculators';
+import QNews from './pages/QNews';
+import { Sparkles } from 'lucide-react';
 
 import logo from './assets/lucid_alpha_logo.png';
 
@@ -45,14 +48,19 @@ function Layout() {
             <NavLink to="/trading">Trading</NavLink>
             <NavLink to="/stocks">Aktien</NavLink>
             <NavLink to="/seasonality">Saisonalität</NavLink>
-
-            <NavLink to="/cot">CoT</NavLink>
+            <NavLink to="/calculators">Rechner</NavLink>
+            <NavLink to="/qnews">
+              <span className="flex items-center gap-1.5 text-purple-400 font-semibold">
+                <Sparkles className="w-4 h-4" />
+                QNews
+              </span>
+            </NavLink>
           </div>
 
           <div className="flex items-center gap-4">
             <button className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 4 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </button>
           </div>
@@ -71,7 +79,8 @@ function Layout() {
           <Route path="/seasonality/stocks" element={<StockSeasonality />} />
           <Route path="/seasonality/trading" element={<TradingSeasonality />} />
           <Route path="/seasonality/screener" element={<Screener />} />
-          <Route path="/cot" element={<CotAnalysis />} />
+          <Route path="/calculators" element={<Calculators />} />
+          <Route path="/qnews" element={<QNews />} />
         </Routes>
       </main>
     </div>

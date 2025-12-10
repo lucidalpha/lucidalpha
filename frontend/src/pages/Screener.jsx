@@ -10,6 +10,7 @@ const Screener = () => {
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState(null);
     const [error, setError] = useState(null);
+    const [expandedTicker, setExpandedTicker] = useState(null);
 
     // Parameters
     const [params, setParams] = useState({
@@ -41,7 +42,13 @@ const Screener = () => {
                 min_win_rate: parseInt(params.winRate),
                 lookback_years: parseInt(params.lookback),
                 search_start_date: params.startDay && params.startDay.length === 5 ? params.startDay : null,
-                search_end_date: params.endDay && params.endDay.length === 5 ? params.endDay : null
+                search_end_date: params.endDay && params.endDay.length === 5 ? params.endDay : null,
+                filter_odd_years: params.filterOddYears,
+                exclude_2020: params.exclude2020,
+                filter_election: params.filterElection,
+                filter_midterm: params.filterMidterm,
+                filter_pre_election: params.filterPreElection,
+                filter_post_election: params.filterPostElection
             };
 
             const res = await fetch(`${API_BASE}/screener/run`, {
@@ -199,6 +206,48 @@ const Screener = () => {
                             className="w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:bg-blue-400 [&::-webkit-slider-thumb]:rounded-sm"
                         />
                     </div>
+
+                    {/* Additional Filters */}
+                    <div className="space-y-3 pt-4 border-t border-white/10">
+                        <label className="text-blue-400 font-medium text-lg">5. Filter</label>
+                        <div className="grid grid-cols-2 gap-2">
+                            {/* Ungerade */}
+                            <label className={`flex items-center gap-2 cursor-pointer px-2 py-2 rounded border transition-all ${params.filterOddYears ? 'bg-blue-900/20 border-blue-500/50' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
+                                <input type="checkbox" checked={params.filterOddYears} onChange={(e) => setParams({ ...params, filterOddYears: e.target.checked })} className="w-3 h-3 bg-gray-800 border-gray-600 rounded" />
+                                <span className={`text-[10px] select-none ${params.filterOddYears ? 'text-blue-100' : 'text-gray-300'}`}>Ungerade</span>
+                            </label>
+
+                            {/* Exclude 2020 */}
+                            <label className={`flex items-center gap-2 cursor-pointer px-2 py-2 rounded border transition-all ${params.exclude2020 ? 'bg-red-900/20 border-red-500/50' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
+                                <input type="checkbox" checked={params.exclude2020} onChange={(e) => setParams({ ...params, exclude2020: e.target.checked })} className="w-3 h-3 bg-gray-800 border-gray-600 rounded" />
+                                <span className={`text-[10px] select-none ${params.exclude2020 ? 'text-red-100' : 'text-gray-300'}`}>No 2020</span>
+                            </label>
+
+                            {/* Election */}
+                            <label className={`flex items-center gap-2 cursor-pointer px-2 py-2 rounded border transition-all ${params.filterElection ? 'bg-indigo-900/20 border-indigo-500/50' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
+                                <input type="checkbox" checked={params.filterElection} onChange={(e) => setParams({ ...params, filterElection: e.target.checked })} className="w-3 h-3 bg-gray-800 border-gray-600 rounded" />
+                                <span className={`text-[10px] select-none ${params.filterElection ? 'text-indigo-100' : 'text-gray-300'}`}>Election</span>
+                            </label>
+
+                            {/* Post-Election */}
+                            <label className={`flex items-center gap-2 cursor-pointer px-2 py-2 rounded border transition-all ${params.filterPostElection ? 'bg-indigo-900/20 border-indigo-500/50' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
+                                <input type="checkbox" checked={params.filterPostElection} onChange={(e) => setParams({ ...params, filterPostElection: e.target.checked })} className="w-3 h-3 bg-gray-800 border-gray-600 rounded" />
+                                <span className={`text-[10px] select-none ${params.filterPostElection ? 'text-indigo-100' : 'text-gray-300'}`}>Post-El.</span>
+                            </label>
+
+                            {/* Midterm */}
+                            <label className={`flex items-center gap-2 cursor-pointer px-2 py-2 rounded border transition-all ${params.filterMidterm ? 'bg-indigo-900/20 border-indigo-500/50' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
+                                <input type="checkbox" checked={params.filterMidterm} onChange={(e) => setParams({ ...params, filterMidterm: e.target.checked })} className="w-3 h-3 bg-gray-800 border-gray-600 rounded" />
+                                <span className={`text-[10px] select-none ${params.filterMidterm ? 'text-indigo-100' : 'text-gray-300'}`}>Midterm</span>
+                            </label>
+
+                            {/* Pre-Election */}
+                            <label className={`flex items-center gap-2 cursor-pointer px-2 py-2 rounded border transition-all ${params.filterPreElection ? 'bg-indigo-900/20 border-indigo-500/50' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
+                                <input type="checkbox" checked={params.filterPreElection} onChange={(e) => setParams({ ...params, filterPreElection: e.target.checked })} className="w-3 h-3 bg-gray-800 border-gray-600 rounded" />
+                                <span className={`text-[10px] select-none ${params.filterPreElection ? 'text-indigo-100' : 'text-gray-300'}`}>Pre-El.</span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -250,25 +299,92 @@ const Screener = () => {
                                         </tr>
                                     ) : (
                                         (results.patterns || results).map((r, i) => (
-                                            <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors text-gray-300">
-                                                <td className="p-4 font-semibold text-white">{r.ticker}</td>
-                                                <td className="p-4">
-                                                    <span className={`px-2 py-1 rounded text-xs font-medium ${r.type === 'Long' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
-                                                        }`}>
-                                                        {r.type}
-                                                    </span>
-                                                </td>
-                                                <td className="p-4 text-white font-medium">{r.win_rate.toFixed(1)}%</td>
-                                                <td className="p-4">{formatDate(r.start_str)}</td>
-                                                <td className="p-4">{formatDate(r.end_str)}</td>
-                                                <td className="p-4">{r.duration} Tage</td>
-                                                <td className="p-4">{r.years_analyzed || "-"}</td>
-                                                <td className="p-4 text-gray-500 text-xs max-w-[200px] truncate" title={r.missed_years?.join(", ")}>
-                                                    {r.missed_years && r.missed_years.length > 0
-                                                        ? r.missed_years.join(", ")
-                                                        : "-"}
-                                                </td>
-                                            </tr>
+                                            <React.Fragment key={i}>
+                                                <tr
+                                                    onClick={() => setExpandedTicker(expandedTicker === r.ticker ? null : r.ticker)}
+                                                    className="border-b border-white/5 hover:bg-white/5 transition-colors text-gray-300 cursor-pointer"
+                                                >
+                                                    <td className="p-4 font-semibold text-white whitespace-nowrap">
+                                                        <div className="flex flex-col">
+                                                            <span>{r.ticker}</span>
+                                                            <span className="text-xs text-gray-500 font-normal">{r.asset_name}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-4 whitespace-nowrap">
+                                                        <span className={`px-2 py-1 rounded text-xs font-medium ${r.type === 'Long' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+                                                            }`}>
+                                                            {r.type}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-4 text-white font-medium">{r.win_rate.toFixed(1)}%</td>
+                                                    <td className="p-4">{formatDate(r.start_str)}</td>
+                                                    <td className="p-4">{formatDate(r.end_str)}</td>
+                                                    <td className="p-4">{r.duration} Tage</td>
+                                                    <td className="p-4">
+                                                        {r.years_analyzed || "-"}
+                                                        {r.analysis_period_start && r.analysis_period_end && (
+                                                            <span className="block text-xs text-gray-500">
+                                                                ({r.analysis_period_start} - {r.analysis_period_end})
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-4 text-gray-500 text-xs max-w-[200px] truncate" title={r.missed_years?.join(", ")}>
+                                                        {r.missed_years && r.missed_years.length > 0
+                                                            ? r.missed_years.join(", ")
+                                                            : "-"}
+                                                    </td>
+                                                </tr>
+                                                {expandedTicker === r.ticker && r.yearly_trades && (
+                                                    <tr className="bg-white/5">
+                                                        <td colSpan="8" className="p-4">
+                                                            <div className="bg-[#111] rounded-lg p-4 border border-white/10">
+                                                                <h4 className="text-gray-400 font-bold mb-3 text-sm">Jahresdetails für {r.ticker} ({r.type})</h4>
+                                                                <div className="overflow-x-auto">
+                                                                    <table className="w-full text-xs text-left">
+                                                                        <thead>
+                                                                            <tr className="text-gray-500 border-b border-white/10">
+                                                                                <th className="py-2">Jahr</th>
+                                                                                <th className="py-2">Einstieg</th>
+                                                                                <th className="py-2">Preis In</th>
+                                                                                <th className="py-2">Ausstieg</th>
+                                                                                <th className="py-2">Preis Out</th>
+                                                                                <th className="py-2 text-right">Delta</th>
+                                                                                <th className="py-2 text-right">Ergebnis</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody className="text-gray-300">
+                                                                            {r.yearly_trades.sort((a, b) => b.year - a.year).map((trade, idx) => {
+                                                                                const isWin = (r.type === 'Long' && trade.exit_price > trade.entry_price) ||
+                                                                                    (r.type === 'Short' && trade.exit_price < trade.entry_price);
+                                                                                const profitAbs = trade.exit_price - trade.entry_price;
+                                                                                const profitDisplay = r.type === 'Short' ? -profitAbs : profitAbs;
+
+                                                                                return (
+                                                                                    <tr key={idx} className="border-b border-white/5 last:border-0 hover:bg-white/5">
+                                                                                        <td className="py-2 font-medium">{trade.year}</td>
+                                                                                        <td className="py-2">{trade.entry_date}</td>
+                                                                                        <td className="py-2">{trade.entry_price.toFixed(2)}</td>
+                                                                                        <td className="py-2">{trade.exit_date}</td>
+                                                                                        <td className="py-2">{trade.exit_price.toFixed(2)}</td>
+                                                                                        <td className={`py-2 text-right ${profitDisplay > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                                                            {profitDisplay > 0 ? '+' : ''}{profitDisplay.toFixed(2)}
+                                                                                        </td>
+                                                                                        <td className="py-2 text-right">
+                                                                                            <span className={`px-1.5 py-0.5 rounded ${isWin ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
+                                                                                                {isWin ? 'WIN' : 'LOSS'}
+                                                                                            </span>
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                );
+                                                                            })}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </React.Fragment>
                                         ))
                                     )}
                                 </tbody>

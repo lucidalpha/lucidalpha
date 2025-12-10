@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import ResultsTable from '../components/ResultsTable';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, Calendar, TrendingUp, Filter, Settings2, Sparkles, X, MessageSquare, Send } from 'lucide-react';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     Legend, ReferenceLine, AreaChart, Area, ReferenceArea
 } from 'recharts';
+import SeasonalChart from '../components/SeasonalChart';
 
 // Reuse the AssetOverview and AssetCotView components logic, 
 // or import them if we refactor AssetList to export them.
@@ -296,7 +297,7 @@ const AssetPriceChart = ({ ticker }) => {
             setLoading(true);
             setError(null);
             try {
-                const response = await axios.post('http://localhost:8000/analyze_ticker', { ticker });
+                const response = await axios.post('http://localhost:8000/ticker_history', { ticker });
                 const data = response.data.chart_data || [];
                 setAllData(data);
                 filterData(data, range);
@@ -381,9 +382,6 @@ const AssetAnalysisWindow = () => {
     // Fallback if category is missing or generic "Asset"
     const category = (urlCategory && urlCategory !== 'Asset') ? urlCategory : getCategoryByTicker(ticker);
 
-    // Default tab removed in favor of single view
-    // const [activeTab, setActiveTab] = useState('overview');
-
     useEffect(() => {
         // Set document title
         if (name) document.title = `${name} - Analysis`;
@@ -392,7 +390,7 @@ const AssetAnalysisWindow = () => {
     if (!ticker) return <div className="p-10 text-white">No asset selected.</div>;
 
     return (
-        <div className="min-h-screen bg-black text-gray-300 font-sans p-6 overflow-hidden flex flex-col">
+        <div className="min-h-screen bg-black text-gray-300 font-sans p-6 overflow-hidden flex flex-col relative">
             {/* Header */}
             <div className="flex items-center justify-between mb-6 pb-6 border-b border-gray-800">
                 <div className="flex items-center gap-4">
@@ -420,7 +418,7 @@ const AssetAnalysisWindow = () => {
                 {category === 'Aktien' ? (
                     /* Layout for Stocks: Just Seasonality, no CoT */
                     <div className="flex flex-col xl:flex-row gap-8 items-start min-h-[600px]">
-                        <div className="flex-1 min-w-0 max-w-[50%]">
+                        <div className="flex-1 min-w-0">
                             <AssetSeasonalityTable ticker={ticker} />
                         </div>
                     </div>
@@ -442,31 +440,348 @@ const AssetAnalysisWindow = () => {
 
 const AssetSeasonalityTable = ({ ticker }) => {
     const [results, setResults] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [seasonalTrend, setSeasonalTrend] = useState([]);
+    const [highlightRange, setHighlightRange] = useState(null);
+    const [customStats, setCustomStats] = useState(null);
+    const [loadingCustom, setLoadingCustom] = useState(false);
 
+    // Split Loading States
+    const [loadingResults, setLoadingResults] = useState(true);
+    const [loadingTrend, setLoadingTrend] = useState(true);
+
+    const [lookback, setLookback] = useState(10);
+    const [winRate, setWinRate] = useState(70);
+    const [filterPostElection, setFilterPostElection] = useState(false);
+    const [filterOddYears, setFilterOddYears] = useState(false);
+    const [exclude2020, setExclude2020] = useState(false);
+    const [filterElection, setFilterElection] = useState(false);
+    const [filterMidterm, setFilterMidterm] = useState(false);
+    const [filterPreElection, setFilterPreElection] = useState(false);
+
+    const formatDate = (dateStr) => {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('de-DE', { day: '2-digit', month: 'short' });
+    };
+
+    const handlePatternClick = (pattern) => {
+        try {
+            const getMonthName = (mIdx) => ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][mIdx];
+
+            // pattern.start_str is "2023-01-20"
+            const pStart = new Date(pattern.start_str);
+            const pEnd = new Date(pattern.end_str);
+
+            const startKey = `${getMonthName(pStart.getMonth())} ${String(pStart.getDate()).padStart(2, '0')}`;
+            const endKey = `${getMonthName(pEnd.getMonth())} ${String(pEnd.getDate()).padStart(2, '0')}`;
+
+            setHighlightRange({ start: startKey, end: endKey });
+            setCustomStats(null);
+        } catch (e) {
+            console.error("Date parse error", e);
+        }
+    };
+
+    const handleRangeSelect = async (startLabel, endLabel) => {
+        // startLabel: "Jan 15", endLabel: "Mar 20"
+        console.log("Selected:", startLabel, endLabel);
+
+        setHighlightRange({ start: startLabel, end: endLabel });
+        setLoadingCustom(true);
+        setCustomStats(null);
+
+        try {
+            // Convert Labels back to M-D for backend
+            // Map "Jan" -> 01
+            const monthMap = { "Jan": "01", "Feb": "02", "Mar": "03", "Apr": "04", "May": "05", "Jun": "06", "Jul": "07", "Aug": "08", "Sep": "09", "Oct": "10", "Nov": "11", "Dec": "12" };
+
+            const parseMD = (lbl) => {
+                const [mStr, dStr] = lbl.split(' ');
+                return `${monthMap[mStr]}-${dStr}`;
+            };
+
+            const startMD = parseMD(startLabel);
+            const endMD = parseMD(endLabel);
+
+            const response = await axios.post('http://localhost:8000/evaluate_pattern', {
+                ticker: ticker,
+                start_md: startMD,
+                end_md: endMD,
+                lookback_years: lookback,
+                filter_mode: filterPostElection ? 'post_election' : null,
+                filter_odd_years: filterOddYears,
+                exclude_2020: exclude2020,
+                filter_election: filterElection,
+                filter_midterm: filterMidterm,
+                filter_pre_election: filterPreElection,
+                filter_post_election: filterPostElection
+            });
+
+            if (response.data.status === "success" && response.data.stats) {
+                setCustomStats(response.data.stats);
+            }
+
+        } catch (e) {
+            console.error("Custom analysis failed", e);
+        } finally {
+            setLoadingCustom(false);
+        }
+    };
+
+    // Fetch Trend (Fast)
     useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                const response = await axios.post('http://localhost:8000/analyze_ticker', { ticker });
+        setLoadingTrend(true);
+        axios.post('http://localhost:8000/ticker_seasonality_trend', {
+            ticker: ticker,
+            lookback_years: lookback,
+            filter_mode: filterPostElection ? 'post_election' : null,
+            filter_odd_years: filterOddYears,
+            exclude_2020: exclude2020,
+            filter_election: filterElection,
+            filter_midterm: filterMidterm,
+            filter_pre_election: filterPreElection,
+            filter_post_election: filterPostElection
+        })
+            .then(res => {
+                setSeasonalTrend(res.data.seasonal_trend || []);
+                setLoadingTrend(false);
+            })
+            .catch(err => {
+                console.error(err);
+                setLoadingTrend(false);
+            });
+    }, [ticker, lookback, filterPostElection, filterOddYears, exclude2020, filterElection, filterMidterm, filterPreElection]);
+
+    // Fetch Results (Calculated)
+    useEffect(() => {
+        if (!ticker) return;
+
+        setLoadingResults(true);
+        axios.post('http://localhost:8000/analyze_ticker', {
+            ticker: ticker,
+            lookback_years: lookback,
+            min_win_rate: winRate,
+            filter_mode: filterPostElection ? 'post_election' : null,
+            filter_odd_years: filterOddYears,
+            exclude_2020: exclude2020,
+            filter_election: filterElection,
+            filter_midterm: filterMidterm,
+            filter_pre_election: filterPreElection,
+            filter_post_election: filterPostElection
+        })
+            .then(response => {
                 setResults(response.data.results);
-            } catch (err) { console.error(err); }
-            finally { setLoading(false); }
-        };
-        if (ticker) fetchData();
-    }, [ticker]);
+                setLoadingResults(false);
+            })
+            .catch(error => {
+                console.error("Error fetching analysis:", error);
+                setLoadingResults(false);
+            });
+    }, [ticker, lookback, winRate, filterPostElection, filterOddYears, exclude2020, filterElection, filterMidterm, filterPreElection]);
 
     return (
-        <div className="flex flex-col h-full">
-            <div className="flex justify-between items-center mb-2">
-                <h3 className="text-lg font-semibold text-white">Seasonality Patterns</h3>
+        <div className="flex flex-col gap-6">
+
+            {/* Custom Analysis Result Alert */}
+            {loadingCustom && (
+                <div className="bg-blue-900/30 border border-blue-800 p-4 rounded-xl flex items-center justify-center">
+                    <Loader2 className="animate-spin text-blue-400 mr-2" />
+                    <span className="text-blue-200">Berechne Daten für ausgewählten Zeitraum...</span>
+                </div>
+            )}
+
+            {customStats && (
+                <div className="bg-emerald-900/20 border border-emerald-800 p-4 rounded-xl animate-in fade-in slide-in-from-top-2">
+                    <div className="flex justify-between items-start mb-4">
+                        <h4 className="text-emerald-400 font-semibold flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4" />
+                            Analyse: {formatDate(customStats.start_str)} - {formatDate(customStats.end_str)}
+                        </h4>
+                        <button onClick={() => setCustomStats(null)} className="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
+                    </div>
+
+                    {/* Summary Cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-6">
+                        <div className="bg-black/40 p-3 rounded-lg border border-white/5">
+                            <span className="text-gray-400 block text-xs uppercase tracking-wider mb-1">Trefferquote Long</span>
+                            <span className="text-white font-bold text-xl">{customStats.win_rate.toFixed(1)}%</span>
+                        </div>
+                        <div className="bg-black/40 p-3 rounded-lg border border-white/5">
+                            <span className="text-gray-400 block text-xs uppercase tracking-wider mb-1">Ø Gewinn</span>
+                            <span className={`font-bold text-xl ${customStats.avg_return >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {customStats.avg_return > 0 ? '+' : ''}{customStats.avg_return.toFixed(2)}%
+                            </span>
+                        </div>
+                        <div className="bg-black/40 p-3 rounded-lg border border-white/5">
+                            <span className="text-gray-400 block text-xs uppercase tracking-wider mb-1">Bester Trade</span>
+                            <span className="text-green-400 font-bold text-xl">+{customStats.max_return.toFixed(2)}%</span>
+                        </div>
+                        <div className="bg-black/40 p-3 rounded-lg border border-white/5">
+                            <span className="text-gray-400 block text-xs uppercase tracking-wider mb-1">Schlechtester Trade</span>
+                            <span className="text-red-400 font-bold text-xl">{customStats.min_return.toFixed(2)}%</span>
+                        </div>
+                    </div>
+
+                    {/* Detailed Yearly Trades Table */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-xs text-left">
+                            <thead>
+                                <tr className="border-b border-gray-700 text-gray-400">
+                                    <th className="py-2 px-2 font-medium">Jahr</th>
+                                    <th className="py-2 px-2 font-medium text-right">Einstieg</th>
+                                    <th className="py-2 px-2 font-medium text-right">Ausstieg</th>
+                                    <th className="py-2 px-2 font-medium text-right">Diff</th>
+                                    <th className="py-2 px-2 font-medium text-right">% GuV</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {customStats.yearly_trades.map((trade, idx) => {
+                                    const diff = trade.exit_price - trade.entry_price;
+                                    const isWin = trade.gain_percent > 0;
+                                    return (
+                                        <tr key={idx} className="border-b border-gray-800/50 hover:bg-white/5 transition-colors">
+                                            <td className="py-2 px-2 text-gray-300">{trade.year}</td>
+                                            <td className="py-2 px-2 text-right text-gray-400">{trade.entry_price.toFixed(2)}</td>
+                                            <td className="py-2 px-2 text-right text-gray-400">{trade.exit_price.toFixed(2)}</td>
+                                            <td className={`py-2 px-2 text-right font-medium ${diff >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                {diff > 0 ? '+' : ''}{diff.toFixed(2)}
+                                            </td>
+                                            <td className={`py-2 px-2 text-right font-bold ${isWin ? 'text-green-400' : 'text-red-400'}`}>
+                                                {trade.gain_percent > 0 ? '+' : ''}{trade.gain_percent.toFixed(2)}%
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-blue-500" />
+                        Saisonalität
+                    </h2>
+                </div>
+
+                {/* New Settings Panel */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-black/30 p-5 rounded-xl border border-white/5 backdrop-blur-sm">
+                    {/* Filters Column */}
+                    <div className="space-y-3">
+                        <h3 className="text-xs font-semibold text-blue-400 uppercase tracking-wider flex items-center gap-2">
+                            <Filter className="w-3 h-3" />
+                            Filter & Einstellungen
+                        </h3>
+                        {/* Grid for Checkboxes */}
+                        <div className="grid grid-cols-2 gap-x-2 gap-y-2">
+                            {/* Ungerade */}
+                            <label className={`flex items-center gap-3 cursor-pointer px-3 py-2 rounded-lg border transition-all ${filterOddYears ? 'bg-blue-900/20 border-blue-500/50' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
+                                <input type="checkbox" checked={filterOddYears} onChange={(e) => setFilterOddYears(e.target.checked)} className="peer w-3.5 h-3.5 bg-gray-800 border-gray-600 rounded" />
+                                <span className={`text-xs select-none ${filterOddYears ? 'text-blue-100' : 'text-gray-300'}`}>Ungerade Jahre</span>
+                            </label>
+
+                            {/* Exclude 2020 */}
+                            <label className={`flex items-center gap-3 cursor-pointer px-3 py-2 rounded-lg border transition-all ${exclude2020 ? 'bg-red-900/20 border-red-500/50' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
+                                <input type="checkbox" checked={exclude2020} onChange={(e) => setExclude2020(e.target.checked)} className="peer w-3.5 h-3.5 bg-gray-800 border-gray-600 rounded" />
+                                <span className={`text-xs select-none ${exclude2020 ? 'text-red-100' : 'text-gray-300'}`}>2020 ignorieren</span>
+                            </label>
+
+                            {/* Election */}
+                            <label className={`flex items-center gap-3 cursor-pointer px-3 py-2 rounded-lg border transition-all ${filterElection ? 'bg-indigo-900/20 border-indigo-500/50' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
+                                <input type="checkbox" checked={filterElection} onChange={(e) => setFilterElection(e.target.checked)} className="peer w-3.5 h-3.5 bg-gray-800 border-gray-600 rounded" />
+                                <span className={`text-xs select-none ${filterElection ? 'text-indigo-100' : 'text-gray-300'}`}>Election Years</span>
+                            </label>
+
+                            {/* Post-Election */}
+                            <label className={`flex items-center gap-3 cursor-pointer px-3 py-2 rounded-lg border transition-all ${filterPostElection ? 'bg-indigo-900/20 border-indigo-500/50' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
+                                <input type="checkbox" checked={filterPostElection} onChange={(e) => setFilterPostElection(e.target.checked)} className="peer w-3.5 h-3.5 bg-gray-800 border-gray-600 rounded" />
+                                <span className={`text-xs select-none ${filterPostElection ? 'text-indigo-100' : 'text-gray-300'}`}>Post-Election</span>
+                            </label>
+
+                            {/* Midterm */}
+                            <label className={`flex items-center gap-3 cursor-pointer px-3 py-2 rounded-lg border transition-all ${filterMidterm ? 'bg-indigo-900/20 border-indigo-500/50' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
+                                <input type="checkbox" checked={filterMidterm} onChange={(e) => setFilterMidterm(e.target.checked)} className="peer w-3.5 h-3.5 bg-gray-800 border-gray-600 rounded" />
+                                <span className={`text-xs select-none ${filterMidterm ? 'text-indigo-100' : 'text-gray-300'}`}>Midterm Years</span>
+                            </label>
+
+                            {/* Pre-Election */}
+                            <label className={`flex items-center gap-3 cursor-pointer px-3 py-2 rounded-lg border transition-all ${filterPreElection ? 'bg-indigo-900/20 border-indigo-500/50' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
+                                <input type="checkbox" checked={filterPreElection} onChange={(e) => setFilterPreElection(e.target.checked)} className="peer w-3.5 h-3.5 bg-gray-800 border-gray-600 rounded" />
+                                <span className={`text-xs select-none ${filterPreElection ? 'text-indigo-100' : 'text-gray-300'}`}>Pre-Election</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Parameters Column */}
+                    <div className="space-y-3">
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                            <Settings2 className="w-3 h-3" />
+                            Parameter
+                        </h3>
+                        <div className="space-y-4 bg-black/20 p-4 rounded-lg border border-white/5">
+                            {/* Years Slider */}
+                            <div className="flex items-center gap-4">
+                                <span className="text-sm text-gray-400 w-24">Zeitraum</span>
+                                <input
+                                    type="range"
+                                    min="5"
+                                    max="50"
+                                    value={lookback}
+                                    onChange={(e) => setLookback(Number(e.target.value))}
+                                    className="flex-1 h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:scale-110 transition-all"
+                                />
+                                <span className="text-white font-mono text-sm w-12 text-right bg-white/5 px-2 py-0.5 rounded border border-white/10">{lookback} J</span>
+                            </div>
+                            {/* WinRate Slider */}
+                            <div className="flex items-center gap-4">
+                                <span className="text-sm text-gray-400 w-24">Min. Treffer</span>
+                                <input
+                                    type="range"
+                                    min="50"
+                                    max="100"
+                                    value={winRate}
+                                    onChange={(e) => setWinRate(Number(e.target.value))}
+                                    className="flex-1 h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:bg-emerald-500 [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:scale-110 transition-all"
+                                />
+                                <span className="text-white font-mono text-sm w-12 text-right bg-white/5 px-2 py-0.5 rounded border border-white/10">{winRate}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+
             <div className="flex-1 overflow-auto border border-gray-800 rounded-xl bg-black/50 min-h-[400px]">
-                <ResultsTable results={results || []} />
+                {loadingResults ? (
+                    <div className="h-full flex items-center justify-center text-gray-500">
+                        <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                        Analyzing...
+                    </div>
+                ) : (
+                    <ResultsTable results={results || []} onRowClick={handlePatternClick} />
+                )}
             </div>
-        </div>
+
+            <div className="h-[600px]">
+                {loadingTrend ? (
+                    <div className="h-full flex items-center justify-center text-gray-500 bg-black border border-gray-800 rounded-xl">
+                        <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                        Loading Seasonal Trend...
+                    </div>
+                ) : (
+                    seasonalTrend && seasonalTrend.length > 0 &&
+                    <SeasonalChart
+                        data={seasonalTrend}
+                        lookback={lookback}
+                        highlightRange={highlightRange}
+                        onRangeSelect={handleRangeSelect}
+                    />
+                )}
+            </div>
+        </div >
     );
 };
-
 
 export default AssetAnalysisWindow;

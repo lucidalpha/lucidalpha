@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { X, Loader2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine, AreaChart, Area, Brush } from 'recharts';
+import SeasonalChart from '../components/SeasonalChart';
 
 const assetData = [
     {
@@ -75,6 +76,31 @@ const CotAnalysis = () => {
 
     // Index Cycle Lookback (weeks)
     const [lookback, setLookback] = useState(26);
+
+    // Seasonal Trend State
+    const [seasonalTrend, setSeasonalTrend] = useState([]);
+    const [loadingSeasonal, setLoadingSeasonal] = useState(false);
+    const [seasonalLookback, setSeasonalLookback] = useState(15);
+
+    // Fetch Seasonal Trend
+    React.useEffect(() => {
+        if (!selectedAsset) return;
+        const fetchTrend = async () => {
+            setLoadingSeasonal(true);
+            try {
+                const res = await axios.post('http://localhost:8000/ticker_seasonality_trend', {
+                    ticker: selectedAsset.ticker,
+                    lookback_years: seasonalLookback
+                });
+                setSeasonalTrend(res.data.seasonal_trend || []);
+            } catch (e) {
+                console.error("Seasonal trend fetch failed", e);
+            } finally {
+                setLoadingSeasonal(false);
+            }
+        };
+        fetchTrend();
+    }, [selectedAsset, seasonalLookback]);
 
     const handleAssetClick = (asset) => {
         setSelectedAsset(asset);
@@ -441,6 +467,34 @@ const CotAnalysis = () => {
                                                     </LineChart>
                                                 </ResponsiveContainer>
                                             )}
+                                        </div>
+
+                                        {/* Seasonal Trend Chart */}
+                                        <div className="bg-black border border-gray-800 rounded-xl p-6 h-[500px] flex flex-col relative w-full">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h3 className="text-xl font-semibold text-white">Seasonal Trend</h3>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs text-gray-500">Lookback: {seasonalLookback} Years</span>
+                                                    <input
+                                                        type="range"
+                                                        min="5" max="30"
+                                                        value={seasonalLookback}
+                                                        onChange={(e) => setSeasonalLookback(Number(e.target.value))}
+                                                        className="w-24 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="flex-1 w-full relative">
+                                                {loadingSeasonal ? (
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+                                                        <Loader2 className="w-8 h-8 text-white animate-spin" />
+                                                    </div>
+                                                ) : (
+                                                    <div className="absolute inset-0">
+                                                        <SeasonalChart data={seasonalTrend} lookback={seasonalLookback} />
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
 

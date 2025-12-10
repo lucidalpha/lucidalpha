@@ -9,8 +9,22 @@ from pydantic import BaseModel
 from typing import List, Optional
 import asyncio
 import concurrent.futures
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from specific path to be safe
+env_path = os.path.join(os.path.dirname(__file__), ".env")
+load_dotenv(env_path)
+
+# Verify loading
+if os.environ.get("PERPLEXITY_API_KEY"):
+    print("✅ Loaded PERPLEXITY_API_KEY from .env")
+else:
+    print(f"⚠️ Warning: PERPLEXITY_API_KEY not found. Checked path: {env_path}")
 
 # Basic Config
+# Force Reload
+
 UPLOAD_DIR = "uploads"
 REPORTS_DIR = "reports"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -175,114 +189,6 @@ async def upload_file(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-class TickerRequest(BaseModel):
-    ticker: str
-    valuation_period: Optional[int] = None
-    valuation_rescale: Optional[int] = None
-
-def get_valuation_config(ticker):
-    if ticker in ["NQ=F", "^GDAXI", "ES=F", "YM=F", "RTY=F"]:
-        return {"period": 13, "comparisons": [("ZB=F", "Interest Rates (ZB1!)"), ("DX=F", "Dollar Index")]}
-    
-    if ticker in ["6C=F", "6A=F", "6E=F", "6B=F", "6S=F", "6N=F", "6J=F"]:
-        return {"period": 10, "comparisons": [("DX=F", "Dollar Index")]}
-    
-    if ticker == "DX=F":
-         return {"period": 10, "comparisons": [("6E=F", "Euro Future")]}
-
-    if ticker in ["CL=F", "NG=F"]:
-        return {"period": 10, "comparisons": [("DX=F", "Dollar Index"), ("GC=F", "Gold")]}
-    
-    if ticker in ["GC=F", "SI=F", "PA=F", "PL=F", "HG=F"]:
-        comps = []
-        if ticker == "GC=F":
-            comps.append(("SI=F", "Silver"))
-        else:
-            comps.append(("GC=F", "Gold"))
-        comps.append(("DX=F", "Dollar Index"))
-        return {"period": 10, "comparisons": comps}
-
-    return {"period": 10, "comparisons": [("DX=F", "Dollar Index")]}
-
-@app.post("/analyze_ticker")
-def analyze_ticker_endpoint(request: TickerRequest):
-    try:
-        from analysis import analyze_seasonality, fetch_ticker_data, calculate_valuation
-        from datetime import datetime
-        import pandas as pd
-        
-        df = fetch_ticker_data(request.ticker)
-        
-        chart_data = []
-        try:
-             # Ensure valid datetime column
-             if 'Date' not in df.columns and not df.empty:
-                 # Should have been handled in fetch_ticker_data but extra safety
-                 pass
-             
-             if not pd.api.types.is_datetime64_any_dtype(df['Date']):
-                 df['Date'] = pd.to_datetime(df['Date'])
-             
-             # Filter data - ALLOW FULL HISTORY
-             # df_chart = df[df['Date'] >= '2020-01-01'].copy()
-             df_chart = df.copy()
-             df_chart = df_chart.sort_values('Date')
-             
-             for _, row in df_chart.iterrows():
-                 val = row['Close']
-                 # scalar check
-                 if isinstance(val, pd.Series):
-                     val = val.iloc[0]
-                 
-                 chart_data.append({
-                     "date": row['Date'].strftime('%Y-%m-%d'),
-                     "close": round(float(val), 5)
-                 })
-                 
-        except Exception as e:
-            print(f"Chart Data Error: {e}")
-
-        results = analyze_seasonality(df)
-
-        config = get_valuation_config(request.ticker)
-        valuation_data = {} 
-        valuation_columns = []
-        
-        # Override period if provided
-        period_to_use = request.valuation_period if request.valuation_period is not None else config["period"]
-        rescale_to_use = request.valuation_rescale if request.valuation_rescale is not None else 100
-        
-        for idx, (comp_ticker, label) in enumerate(config["comparisons"]):
-            key = f"val_{idx}"
-            valuation_columns.append({"key": key, "label": label})
-            
-            data = calculate_valuation(request.ticker, comp_ticker, period=period_to_use, rescale_period=rescale_to_use)
-            
-            for entry in data:
-                d = entry['date']
-                val = entry['value']
-                
-                if d not in valuation_data:
-                    valuation_data[d] = {"date": d}
-                
-                valuation_data[d][key] = val
-        
-        valuation_list = list(valuation_data.values())
-        valuation_list.sort(key=lambda x: datetime.strptime(x['date'], '%d.%m.%Y'), reverse=True)
-
-        return {
-            "ticker": request.ticker,
-            "status": "success",
-            "results": results,
-            "valuation": valuation_list,
-            "valuation_columns": valuation_columns,
-            "chart_data": chart_data
-        }
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.get("/reports")
 def list_reports():
     reports = []
@@ -348,8 +254,195 @@ ALL_ASSETS = [
     {"name": "E-Mini Russell 2000 Index Futures", "ticker": "RTY=F"}
 ]
 
+
+class TickerRequest(BaseModel):
+    ticker: str
+    lookback_years: Optional[int] = 15
+    min_win_rate: Optional[int] = 70
+    filter_mode: Optional[str] = None
+    filter_odd_years: Optional[bool] = False
+    exclude_2020: Optional[bool] = False
+    filter_election: Optional[bool] = False
+    filter_midterm: Optional[bool] = False
+    filter_pre_election: Optional[bool] = False
+    filter_post_election: Optional[bool] = False
+
+class CustomPatternRequest(BaseModel):
+    ticker: str
+    start_md: str
+    end_md: str
+    lookback_years: Optional[int] = 15
+    filter_mode: Optional[str] = None
+    filter_odd_years: Optional[bool] = False
+    exclude_2020: Optional[bool] = False
+    filter_election: Optional[bool] = False
+    filter_midterm: Optional[bool] = False
+    filter_pre_election: Optional[bool] = False
+    filter_post_election: Optional[bool] = False
+
+@app.post("/analyze_ticker")
+def analyze_ticker_endpoint(request: TickerRequest):
+    try:
+        from analysis import analyze_seasonality, fetch_ticker_data, calculate_seasonal_trend
+        import pandas as pd
+        
+        df = fetch_ticker_data(request.ticker)
+        if df is None or df.empty:
+             # Try yfinance fallback inside fetch_ticker_data usually handles it, but if None:
+             raise HTTPException(status_code=404, detail="Ticker data not found")
+
+        # 2. Analyze Patterns
+        patterns = analyze_seasonality(
+            df, 
+            lookback_years=request.lookback_years if request.lookback_years else 15,
+            min_win_rate=request.min_win_rate if request.min_win_rate else 70,
+            filter_mode=request.filter_mode,
+            filter_odd_years=request.filter_odd_years,
+            exclude_2020=request.exclude_2020,
+            filter_election=request.filter_election,
+            filter_midterm=request.filter_midterm,
+            filter_pre_election=request.filter_pre_election,
+            filter_post_election=request.filter_post_election
+        )
+        
+        # 3. Calculate Seasonal Trend
+        seasonal_trend = calculate_seasonal_trend(
+             df,
+             lookback_years=request.lookback_years if request.lookback_years else 15,
+             filter_mode=request.filter_mode,
+             filter_odd_years=request.filter_odd_years,
+             exclude_2020=request.exclude_2020,
+             filter_election=request.filter_election,
+             filter_midterm=request.filter_midterm,
+             filter_pre_election=request.filter_pre_election,
+             filter_post_election=request.filter_post_election
+        )
+        
+        # 4. Chart Data (Legacy support for AssetOverview)
+        rec = df[['Date', 'Close']].to_dict('records')
+        chart_data = []
+        for r in rec:
+             if pd.notna(r['Close']):
+                 chart_data.append({
+                     "date": r['Date'].strftime('%Y-%m-%d'),
+                     "close": r['Close']
+                 })
+
+        return {
+            "results": patterns,
+            "seasonal_trend": seasonal_trend,
+            "chart_data": chart_data
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/ticker_seasonality_trend")
+def ticker_seasonality_trend_endpoint(request: TickerRequest):
+    try:
+        from analysis import fetch_ticker_data, calculate_seasonal_trend, get_current_year_data
+        
+        df = fetch_ticker_data(request.ticker)
+        if df is None or df.empty:
+             raise HTTPException(status_code=404, detail="Ticker data not found")
+             
+        seasonal_trend = calculate_seasonal_trend(
+             df,
+             lookback_years=request.lookback_years if request.lookback_years else 15,
+             filter_mode=request.filter_mode,
+             filter_odd_years=request.filter_odd_years,
+             exclude_2020=request.exclude_2020,
+             filter_election=request.filter_election,
+             filter_midterm=request.filter_midterm,
+             filter_pre_election=request.filter_pre_election,
+             filter_post_election=request.filter_post_election
+        )
+        
+        # Current Year Data (for comparison line)
+        current_data = get_current_year_data(df)
+        
+        # Merge current data into seasonal trend structure if simplified?
+        # Actually frontend expects `seasonal_trend` as array of {date: "MM-DD", val: 100, current: 95?}
+        # `calculate_seasonal_trend` returns [{date, value}, ...].
+        # We need to merge `current_data` (list of {date: "MM-DD", value: ...}) into this.
+        
+        # Convert to dicts for easy merge
+        trend_map = {item['date']: item for item in seasonal_trend}
+        
+        for item in current_data:
+            d = item['date'] # "Jan 01"
+            if d in trend_map:
+                # Merge 'current_value' from item into the trend map item
+                if 'current_value' in item:
+                     trend_map[d]['current_value'] = item['current_value']
+        
+        # Re-list
+        # Note: seasonal_trend is sorted by MM-DD implicitly by creation logic? 
+        # Usually yes. But let's just return key list.
+        # But wait, `calculate_seasonal_trend` logic in analysis.py:
+        # returns simple list. 
+        # Let's trust the frontend handles `seasonal_trend` separate?
+        # Frontend SeasonalChart uses `dataKey="value"` (trend) and `dataKey="current"` (current).
+        # So we MUST merge them into one list.
+        
+        final_data = list(trend_map.values())
+        # Sort by sort_date (YYYY-MM-DD) to ensure correct calendar order
+        final_data.sort(key=lambda x: x['sort_date'])
+
+        return {
+            "seasonal_trend": final_data
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/evaluate_pattern")
+def evaluate_pattern_endpoint(request: CustomPatternRequest):
+    try:
+        from analysis import fetch_ticker_data, evaluate_custom_pattern
+        
+        df = fetch_ticker_data(request.ticker)
+        if df is None:
+             raise HTTPException(status_code=404, detail="Ticker not found")
+             
+        stats = evaluate_custom_pattern(
+            df,
+            start_md=request.start_md,
+            end_md=request.end_md,
+            lookback_years=request.lookback_years,
+
+            filter_mode=request.filter_mode,
+            filter_odd_years=request.filter_odd_years,
+            exclude_2020=request.exclude_2020,
+            filter_election=request.filter_election,
+            filter_midterm=request.filter_midterm,
+            filter_pre_election=request.filter_pre_election,
+            filter_post_election=request.filter_post_election
+        )
+        
+        return {
+            "status": "success",
+            "stats": stats
+        }
+    except Exception as e:
+        print(f"Eval Pattern Error: {e}")
+        return {"status": "error", "message": str(e)}
+
 @app.get("/analyze_all_assets")
-def analyze_all_assets_endpoint():
+def analyze_all_assets_endpoint(
+    lookback_years: Optional[int] = 15,
+    min_win_rate: Optional[int] = 70,
+    search_start_date: Optional[str] = None,
+    search_end_date: Optional[str] = None,
+    filter_odd_years: Optional[bool] = False,
+    exclude_2020: Optional[bool] = False,
+    filter_election: Optional[bool] = False,
+    filter_midterm: Optional[bool] = False,
+    filter_pre_election: Optional[bool] = False,
+    filter_post_election: Optional[bool] = False
+):
     import time
     import yfinance as yf
     from analysis import analyze_seasonality, fetch_ticker_data
@@ -359,8 +452,19 @@ def analyze_all_assets_endpoint():
     
     current_time = time.time()
     
-    # 1. Check File Cache
-    if os.path.exists(ANALYSIS_CACHE_FILE):
+    # Check if we are using default params (for cache usage)
+    # Cache assumes lookback=15, win=70, no filters, no custom dates
+    # If ANY param deviates, bypass cache
+    is_default_params = (
+        lookback_years == 15 and 
+        min_win_rate == 70 and 
+        not search_start_date and 
+        not search_end_date and
+        not any([filter_odd_years, exclude_2020, filter_election, filter_midterm, filter_pre_election, filter_post_election])
+    )
+
+    # 1. Check File Cache (Only if ALL params are default)
+    if is_default_params and os.path.exists(ANALYSIS_CACHE_FILE):
         try:
             with open(ANALYSIS_CACHE_FILE, "r") as f:
                 cached = json.load(f)
@@ -373,7 +477,7 @@ def analyze_all_assets_endpoint():
     all_patterns = []
     tickers = [a["ticker"] for a in ALL_ASSETS]
     
-    print(f"Starting parallel analysis for {len(tickers)} assets...")
+    print(f"Starting analysis for {len(tickers)} assets... Params: Lookback={lookback_years}, Win={min_win_rate}, Dates={search_start_date}-{search_end_date}")
 
     def process_asset(asset_info):
         ticker = asset_info['ticker']
@@ -388,13 +492,25 @@ def analyze_all_assets_endpoint():
             if 'Date' not in df.columns:
                 df = df.reset_index()
                 
-            patterns = analyze_seasonality(df)
+            pats = analyze_seasonality(
+                df, 
+                lookback_years=lookback_years, 
+                min_win_rate=min_win_rate,
+                search_start_date=search_start_date,
+                search_end_date=search_end_date,
+                filter_odd_years=filter_odd_years,
+                exclude_2020=exclude_2020,
+                filter_election=filter_election,
+                filter_midterm=filter_midterm,
+                filter_pre_election=filter_pre_election,
+                filter_post_election=filter_post_election
+            )
             
-            for p in patterns:
+            for p in pats:
                 p['asset_name'] = name
                 p['ticker'] = ticker
             
-            return patterns
+            return pats
         except Exception as e:
             print(f"Error analyzing {ticker}: {e}")
             return []
@@ -523,10 +639,64 @@ def search_ticker(q: str):
         print(f"Search error: {e}")
         return {"results": []}
 
-# Force reload triggers
+class AIRequest(BaseModel):
+    query: str
+    context: Optional[str] = None
+
+@app.post("/ask_ai")
+def ask_ai_endpoint(req: AIRequest):
+    from ai_service import ask_perplexity
+    return ask_perplexity(req.query, req.context)
 
 
-# ... (existing code)
+
+class TickerHistoryRequest(BaseModel):
+    ticker: str
+
+@app.post("/ticker_history")
+def get_ticker_history(request: TickerHistoryRequest):
+    try:
+        from analysis import fetch_ticker_data
+        df = fetch_ticker_data(request.ticker)
+        
+        if df is None or df.empty:
+             return {"chart_data": []}
+             
+        # Reset index to get Date column if it's the index
+        if 'Date' not in df.columns:
+            df = df.reset_index()
+        
+        # Format for Recharts (date as string, close price)
+        chart_data = []
+        
+        # Use to_dict('records') for speed then process
+        # Ensure we only pick what we need to minimize errors
+        if 'Close' not in df.columns:
+             return {"chart_data": []}
+             
+        records = df[['Date', 'Close']].to_dict('records')
+        
+        for row in records:
+            # Handle Timestamp to string
+            d_val = row['Date']
+            date_str = d_val.isoformat() if hasattr(d_val, 'isoformat') else str(d_val)
+            
+            # Helper for JSON compliance (NaNs etc)
+            close_val = row['Close']
+            # Simple check for NaN (float('nan') != float('nan'))
+            import math
+            if isinstance(close_val, float) and math.isnan(close_val):
+                close_val = None
+                
+            chart_data.append({
+                "date": date_str,
+                "close": close_val
+            })
+            
+        return {"chart_data": chart_data}
+    except Exception as e:
+         print(f"Error fetching history for {request.ticker}: {e}")
+         raise HTTPException(status_code=500, detail=str(e))
 
 # Screener Endpoints
 from screener import screen_index, INDEX_FETCHERS
@@ -542,6 +712,13 @@ class ScreenerRequest(BaseModel):
     lookback_years: Optional[int] = 20
     search_start_date: Optional[str] = None
     search_end_date: Optional[str] = None
+    filter_mode: Optional[str] = None
+    filter_odd_years: Optional[bool] = False
+    exclude_2020: Optional[bool] = False
+    filter_election: Optional[bool] = False
+    filter_midterm: Optional[bool] = False
+    filter_pre_election: Optional[bool] = False
+    filter_post_election: Optional[bool] = False
 
 @app.post("/screener/run")
 def run_screener(request: ScreenerRequest):
@@ -563,7 +740,14 @@ def run_screener(request: ScreenerRequest):
             min_win_rate=request.min_win_rate,
             min_year=min_year,
             search_start_date=request.search_start_date,
-            search_end_date=request.search_end_date
+            search_end_date=request.search_end_date,
+            filter_mode=request.filter_mode,
+            filter_odd_years=request.filter_odd_years,
+            exclude_2020=request.exclude_2020,
+            filter_election=request.filter_election,
+            filter_midterm=request.filter_midterm,
+            filter_pre_election=request.filter_pre_election,
+            filter_post_election=request.filter_post_election
         )
         
         # Check if result_data is a dict (new format) or list (old format fallback)
@@ -583,6 +767,62 @@ def run_screener(request: ScreenerRequest):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+# ... (existing code)
+
+# Calculator Endpoints
+class RiskAnalysisRequest(BaseModel):
+    start_capital: float
+    win_rate: float
+    risk_reward: float
+    risk_per_trade: float
+    num_trades: int
+    drawdown_target: float
+
+class MonteCarloRequest(BaseModel):
+    start_capital: float
+    win_rate: float
+    risk_reward: float
+    risk_per_trade: float
+    num_trades: int
+    num_simulations: int
+
+@app.post("/calculators/risk_analysis")
+def risk_analysis_endpoint(request: RiskAnalysisRequest):
+    try:
+        from calculators import run_risk_analysis
+        result = run_risk_analysis(
+            request.start_capital,
+            request.win_rate,
+            request.risk_reward,
+            request.risk_per_trade,
+            request.num_trades,
+            request.drawdown_target
+        )
+        return result
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/calculators/monte_carlo")
+def monte_carlo_endpoint(request: MonteCarloRequest):
+    try:
+        from calculators import run_monte_carlo
+        result = run_monte_carlo(
+            request.start_capital,
+            request.win_rate,
+            request.risk_reward,
+            request.risk_per_trade,
+            request.num_trades,
+            request.num_simulations
+        )
+        return result
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+

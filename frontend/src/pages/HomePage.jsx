@@ -68,7 +68,7 @@ const HomePage = () => {
                         <MenuCard
                             title="Einzeln"
                             icon={Search}
-                            to="/trading"
+                            to="/stocks"
                             delay={0.2}
                         />
                     </div>

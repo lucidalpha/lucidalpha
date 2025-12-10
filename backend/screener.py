@@ -12,6 +12,8 @@ from analysis import fetch_ticker_data, analyze_seasonality
 INDICES_DIR = "indices"
 os.makedirs(INDICES_DIR, exist_ok=True)
 CACHE_DURATION_CONST = 15552000  # 180 days (approx 6 months)
+# Force reload trigger
+
 
 def get_html_with_headers(url):
     headers = {
@@ -43,10 +45,23 @@ def fetch_dow_jones():
                              break
                 
                 if target_col:
-                    tickers = df[target_col].tolist()
-                    # Sanity check: Dow should have roughly 30 tickers
-                    if 10 <= len(tickers) <= 50:
-                        return [str(t).strip() for t in tickers]
+                    # Try to find Company Name
+                    name_col = "Company"
+                    if "Company" not in df.columns:
+                         for c in df.columns:
+                             if "company" in str(c).lower() or "security" in str(c).lower():
+                                 name_col = c
+                                 break
+                    
+                    results = []
+                    for idx, row in df.iterrows():
+                        t = str(row[target_col]).strip()
+                        n = str(row[name_col]).strip() if name_col in df.columns else t
+                        results.append({"ticker": t, "name": n})
+                        
+                    # Sanity check
+                    if 10 <= len(results) <= 50:
+                        return results
 
         print("Dow Jones: Could not find table with Symbol/Ticker.")
         return []
@@ -61,9 +76,9 @@ def fetch_nasdaq_100():
         tables = pd.read_html(html)
         for t in tables:
             if "Ticker" in t.columns and "Company" in t.columns:
-                return [x.strip() for x in t["Ticker"].tolist()]
+                return [{"ticker": str(row["Ticker"]).strip(), "name": str(row["Company"]).strip()} for idx, row in t.iterrows()]
             if "Symbol" in t.columns and "Company" in t.columns:
-                return [x.strip() for x in t["Symbol"].tolist()]
+                return [{"ticker": str(row["Symbol"]).strip(), "name": str(row["Company"]).strip()} for idx, row in t.iterrows()]
         return []
     except Exception as e:
         print(f"Error fetching Nasdaq: {e}")
@@ -76,15 +91,32 @@ def fetch_dax():
         tables = pd.read_html(html)
         for t in tables:
             if "Ticker symbol" in t.columns:
-                tickers = t["Ticker symbol"].tolist()
-                return [t.strip() if t.strip().endswith(".DE") else f"{t.strip()}.DE" for t in tickers]
-            if "Ticker" in t.columns and "Prime Standard" in str(t.columns): # Heuristic for DAX table
-                 tickers = t["Ticker"].tolist()
-                 return [t.strip() if t.strip().endswith(".DE") else f"{t.strip()}.DE" for t in tickers]
-            # Fallback for generic Ticker column in DAX table
+                res = []
+                # Try name
+                name_col = "Company" if "Company" in t.columns else t.columns[0]
+                for idx, row in t.iterrows():
+                    tick = str(row["Ticker symbol"]).strip()
+                    tick = tick if tick.endswith(".DE") else f"{tick}.DE"
+                    name = str(row[name_col]).strip()
+                    res.append({"ticker": tick, "name": name})
+                return res
+            if "Ticker" in t.columns and "Prime Standard" in str(t.columns): 
+                 res = []
+                 name_col = "Company" if "Company" in t.columns else "Name"
+                 for idx, row in t.iterrows():
+                     tick = str(row["Ticker"]).strip()
+                     tick = tick if tick.endswith(".DE") else f"{tick}.DE"
+                     nm = str(row[name_col]).strip() if name_col in t.columns else tick
+                     res.append({"ticker": tick, "name": nm})
+                 return res
+            # Fallback for generic Ticker column
             if "Ticker" in t.columns and len(t) > 20 and len(t) < 50:
-                 tickers = t["Ticker"].tolist()
-                 return [t.strip() if t.strip().endswith(".DE") else f"{t.strip()}.DE" for t in tickers]
+                 res = []
+                 for idx, row in t.iterrows():
+                     tick = str(row["Ticker"]).strip()
+                     tick = tick if tick.endswith(".DE") else f"{tick}.DE"
+                     res.append({"ticker": tick, "name": tick}) # Name unknown
+                 return res
         return []
     except Exception as e:
         print(f"Error fetching DAX: {e}")
@@ -140,7 +172,59 @@ def get_index_constituents(index_name):
     return tickers
 
 
-def screen_index(index_name, min_win_rate=70, min_year=2014, search_start_date=None, search_end_date=None):
+
+def process_ticker(ticker_obj, min_win_rate=70, min_year=2014, search_start_date=None, search_end_date=None, 
+                  filter_mode=None, filter_odd_years=False, exclude_2020=False, filter_election=False, 
+                  filter_midterm=False, filter_pre_election=False, filter_post_election=False):
+    # Handle both string (legacy cache) and dict (new)
+    if isinstance(ticker_obj, str):
+        ticker = ticker_obj
+        name = ticker_obj
+    else:
+        ticker = ticker_obj.get("ticker")
+        name = ticker_obj.get("name", ticker)
+        
+    try:
+        # Re-import inside process for safety if pickling issues arise, though top-level imports usually fine
+        # from analysis import fetch_ticker_data, analyze_seasonality (already imported at top)
+        
+        df = fetch_ticker_data(ticker)
+        if df is None or df.empty:
+            return {"patterns": [], "error": "No Data"}
+        
+        if len(df) < 500: 
+            return {"patterns": [], "error": "Insufficient Data"}
+            
+        patterns = analyze_seasonality(
+            df, 
+            lookback_years=datetime.now().year - min_year, # Convert min_year back to lookback
+            min_win_rate=min_win_rate, 
+            search_start_date=search_start_date, 
+            search_end_date=search_end_date,
+            filter_mode=filter_mode,
+            filter_odd_years=filter_odd_years,
+            exclude_2020=exclude_2020,
+            filter_election=filter_election,
+            filter_midterm=filter_midterm,
+            filter_pre_election=filter_pre_election,
+            filter_post_election=filter_post_election
+        )
+        for p in patterns:
+            p['ticker'] = ticker
+            p['asset_name'] = name
+        return {"patterns": patterns, "error": None}
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"ERROR screening {ticker}: {str(e)}")
+        return {"patterns": [], "error": str(e)}
+
+
+def screen_index(index_name, min_win_rate=70, min_year=2014, search_start_date=None, search_end_date=None,
+                 filter_mode=None, filter_odd_years=False, exclude_2020=False, filter_election=False, 
+                 filter_midterm=False, filter_pre_election=False, filter_post_election=False):
+                 
     print(f"DEBUG: screen_index called with index={index_name}")
     try:
         tickers = get_index_constituents(index_name)
@@ -157,51 +241,37 @@ def screen_index(index_name, min_win_rate=70, min_year=2014, search_start_date=N
     errors = []
     scanned_count = 0
     
-    def process_ticker(ticker):
-        try:
-            df = fetch_ticker_data(ticker)
-            if df is None or df.empty:
-                return {"patterns": [], "error": "No Data"}
-            
-            if len(df) < 500: 
-                return {"patterns": [], "error": "Insufficient Data"}
-                
-            patterns = analyze_seasonality(
-                df, 
-                min_year=min_year, 
-                min_win_rate=min_win_rate, 
-                search_start_date=search_start_date, 
-                search_end_date=search_end_date
-            )
-            for p in patterns:
-                p['ticker'] = ticker
-                p['asset_name'] = ticker 
-            return {"patterns": patterns, "error": None}
-
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            print(f"ERROR screening {ticker}: {str(e)}")
-            return {"patterns": [], "error": str(e)}
-
-    # Parallel Processing
-    print(f"DEBUG: Starting parallel screening with 5 workers for {len(tickers)} tickers...")
+    # ProcessPool for true parallelism
+    print(f"DEBUG: Starting parallel screening (ProcessPool) for {len(tickers)} tickers...")
     
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-        future_to_ticker = {executor.submit(process_ticker, t): t for t in tickers}
-        for future in concurrent.futures.as_completed(future_to_ticker):
-            ticker = future_to_ticker[future]
+    # Use functools.partial to pass the constant arguments
+    import functools
+    worker = functools.partial(process_ticker, 
+                               min_win_rate=min_win_rate, 
+                               min_year=min_year, 
+                               search_start_date=search_start_date, 
+                               search_end_date=search_end_date,
+                               filter_mode=filter_mode,
+                               filter_odd_years=filter_odd_years,
+                               exclude_2020=exclude_2020,
+                               filter_election=filter_election,
+                               filter_midterm=filter_midterm,
+                               filter_pre_election=filter_pre_election,
+                               filter_post_election=filter_post_election)
+
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        # Map is cleaner for ProcessPool
+        results = list(executor.map(worker, tickers))
+        
+        # Collect results
+        for res in results:
             scanned_count += 1
-            try:
-                res = future.result()
-                if res["error"]:
-                    errors.append(f"{ticker}: {res['error']}")
-                
-                if res["patterns"]:
-                    all_patterns.extend(res["patterns"])
-            except Exception as e:
-                errors.append(f"{ticker}: Thread Error {str(e)}")
-                print(f"Thread error: {e}")
+            if res.get("error"):
+                 # Extract ticker from error message if possible, or just log
+                 errors.append(res["error"])
+            
+            if res.get("patterns"):
+                all_patterns.extend(res["patterns"])
 
     # Sort Global Results
     all_patterns.sort(key=lambda x: x['win_rate'], reverse=True)

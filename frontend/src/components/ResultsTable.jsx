@@ -11,7 +11,7 @@ const formatDate = (dateStr) => {
     return dateStr;
 };
 
-const ResultsTable = ({ results }) => {
+const ResultsTable = ({ results, onRowClick }) => {
     if (!results || results.length === 0) {
         return (
             <div className="text-center text-gray-400 mt-8">
@@ -38,6 +38,9 @@ const ResultsTable = ({ results }) => {
                                 <th className="px-3 py-2.5">Enddatum</th>
                                 <th className="px-3 py-2.5">Typ</th>
                                 <th className="px-3 py-2.5">Trefferquote</th>
+                                <th className="px-3 py-2.5">Ø Gewinn</th>
+                                <th className="px-3 py-2.5">Bester Trade</th>
+                                <th className="px-3 py-2.5">Schlechtester Trade</th>
                                 <th className="px-3 py-2.5">Fehltreffer (Jahre)</th>
                             </tr>
                         </thead>
@@ -45,7 +48,8 @@ const ResultsTable = ({ results }) => {
                             {results.map((pattern, index) => (
                                 <tr
                                     key={index}
-                                    className="hover:bg-white/5 transition-colors"
+                                    onClick={() => onRowClick && onRowClick(pattern)}
+                                    className="hover:bg-white/5 transition-colors cursor-pointer group"
                                 >
                                     <td className="px-3 py-2.5 text-sm font-medium text-gray-300">
                                         {formatDate(pattern.start_str)}
@@ -66,6 +70,17 @@ const ResultsTable = ({ results }) => {
                                         <span className={`text-sm font-bold ${pattern.win_rate >= 90 ? 'text-emerald-400' : 'text-white'}`}>
                                             {pattern.win_rate.toFixed(1)}%
                                         </span>
+                                    </td>
+                                    <td className="px-3 py-2.5 text-sm">
+                                        <span className={`${pattern.avg_return >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                            {pattern.avg_return ? pattern.avg_return.toFixed(2) + '%' : '-'}
+                                        </span>
+                                    </td>
+                                    <td className="px-3 py-2.5 text-sm text-green-400">
+                                        {pattern.max_return ? '+' + pattern.max_return.toFixed(2) + '%' : '-'}
+                                    </td>
+                                    <td className="px-3 py-2.5 text-sm text-red-400">
+                                        {pattern.min_return ? pattern.min_return.toFixed(2) + '%' : '-'}
                                     </td>
                                     <td className="px-3 py-2.5 text-sm text-gray-500">
                                         {pattern.missed_years.length > 0 ? (
