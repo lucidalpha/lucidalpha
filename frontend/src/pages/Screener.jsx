@@ -234,7 +234,8 @@ const Screener = () => {
                                         <th className="p-4 font-medium">Start</th>
                                         <th className="p-4 font-medium">Ende</th>
                                         <th className="p-4 font-medium">Dauer</th>
-                                        <th className="p-4 font-medium">Jahre (Missed)</th>
+                                        <th className="p-4 font-medium">Analysierte Jahre</th>
+                                        <th className="p-4 font-medium">Missed Years</th>
                                     </tr>
                                 </thead>
 
@@ -261,6 +262,7 @@ const Screener = () => {
                                                 <td className="p-4">{formatDate(r.start_str)}</td>
                                                 <td className="p-4">{formatDate(r.end_str)}</td>
                                                 <td className="p-4">{r.duration} Tage</td>
+                                                <td className="p-4">{r.years_analyzed || "-"}</td>
                                                 <td className="p-4 text-gray-500 text-xs max-w-[200px] truncate" title={r.missed_years?.join(", ")}>
                                                     {r.missed_years && r.missed_years.length > 0
                                                         ? r.missed_years.join(", ")

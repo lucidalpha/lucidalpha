@@ -275,7 +275,7 @@ def analyze_seasonality(data_source, min_year=2014, min_win_rate=70, search_star
                      continue
         
         # Max duration 30 days
-        for duration in range(3, 31): # 3 to 30
+        for duration in range(10, 31): # 10 to 30
             target_end_dummy = start_date_dummy + timedelta(days=duration)
             
             wins_long = 0
@@ -352,6 +352,7 @@ def analyze_seasonality(data_source, min_year=2014, min_win_rate=70, search_star
                     'type': 'Long',
                     'win_rate': float(win_rate_long),
                     'missed_years': missed_years_long,
+                    'years_analyzed': total_years,
                     'start_str': f"2023-{start_month:02d}-{start_day:02d}",
                     'end_str': f"2023-{target_end_dummy.month:02d}-{target_end_dummy.day:02d}"
                 })
@@ -366,43 +367,19 @@ def analyze_seasonality(data_source, min_year=2014, min_win_rate=70, search_star
                     'type': 'Short',
                     'win_rate': float(win_rate_short),
                     'missed_years': missed_years_short,
+                    'years_analyzed': total_years,
                     'start_str': f"2023-{start_month:02d}-{start_day:02d}",
                     'end_str': f"2023-{target_end_dummy.month:02d}-{target_end_dummy.day:02d}"
                 })
 
-    # Optimization
-    patterns.sort(key=lambda x: x['win_rate'], reverse=True)
+    # Sort by Win Rate (desc), then by Years (desc) to favor robustness
+    patterns.sort(key=lambda x: (x['win_rate'], x['years_analyzed']), reverse=True)
     
-    final_patterns = []
-    
-    def is_overlapping(p1, p2):
-        def get_doy_range(p):
-            s_md = p['start_md']
-            e_md = p['end_md']
-            s_date = datetime(2023, s_md[0], s_md[1])
-            e_date = datetime(2023, e_md[0], e_md[1])
-            if e_date < s_date:
-                e_date = e_date.replace(year=2024)
-            days = []
-            curr = s_date
-            while curr <= e_date:
-                days.append(curr.timetuple().tm_yday)
-                curr += timedelta(days=1)
-            return set(days)
-
-        range1 = get_doy_range(p1)
-        range2 = get_doy_range(p2)
-        return not range1.isdisjoint(range2)
-
-    for p in patterns:
-        overlap = False
-        for fp in final_patterns:
-            if is_overlapping(p, fp):
-                overlap = True
-                break
-        
-        if not overlap:
-            final_patterns.append(p)
+    # User Request: Only the SINGLE strongest pattern per asset
+    if patterns:
+        final_patterns = [patterns[0]]
+    else:
+        final_patterns = []
             
     return final_patterns
 
