@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 import { Search, Loader2 } from 'lucide-react';
 
 const StockSeasonality = () => {
@@ -21,7 +22,7 @@ const StockSeasonality = () => {
             setLoading(true);
             setError(null);
             try {
-                const res = await axios.get(`http://localhost:8000/search_ticker?q=${query}`);
+                const res = await axios.get(apiUrl(`/search_ticker?q=${query}`));
                 setSuggestions(res.data.results || []);
             } catch (e) {
                 console.error(e);

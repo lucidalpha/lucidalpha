@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -50,7 +51,7 @@ const TradingSeasonality = () => {
                 if (filterPreElection) params.append('filter_pre_election', 'true');
                 if (filterPostElection) params.append('filter_post_election', 'true');
 
-                const res = await axios.get(`http://localhost:8000/analyze_all_assets?${params.toString()}`);
+                const res = await axios.get(apiUrl(`/analyze_all_assets?${params.toString()}`));
                 setPatterns(res.data);
             } catch (e) {
                 console.error(e);

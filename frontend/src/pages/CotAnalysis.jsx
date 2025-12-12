@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 import { X, Loader2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine, AreaChart, Area, Brush } from 'recharts';
 import SeasonalChart from '../components/SeasonalChart';
@@ -88,7 +89,7 @@ const CotAnalysis = () => {
         const fetchTrend = async () => {
             setLoadingSeasonal(true);
             try {
-                const res = await axios.post('http://localhost:8000/ticker_seasonality_trend', {
+                const res = await axios.post(apiUrl('/ticker_seasonality_trend'), {
                     ticker: selectedAsset.ticker,
                     lookback_years: seasonalLookback
                 });
@@ -135,7 +136,7 @@ const CotAnalysis = () => {
 
             setLoading(true);
             try {
-                const response = await axios.get(`http://localhost:8000/cot/${selectedAsset.ticker}`, {
+                const response = await axios.get(apiUrl(`/cot/${selectedAsset.ticker}`), {
                     params: {
                         report_type: reportType,
                         lookback: lookback

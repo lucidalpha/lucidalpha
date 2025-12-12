@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Form
+from fastapi import FastAPI, UploadFile, File, HTTPException, Form, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 import shutil
 import os
@@ -639,14 +639,86 @@ def search_ticker(q: str):
         print(f"Search error: {e}")
         return {"results": []}
 
+# --- AUTOMATION / QNEWS ---
+@app.on_event("startup")
+def startup_event():
+    from automation import start_scheduler
+    start_scheduler()
+    
+    # Auto-Run Fallback: Check if daily analysis ran today
+    import subprocess
+    import threading
+    from datetime import datetime
+    
+    def run_analysis_if_needed():
+        json_path = "daily_fx_scores.json"
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        
+        should_run = False
+        if not os.path.exists(json_path):
+            should_run = True
+        else:
+            try:
+                with open(json_path, "r") as f:
+                    data = json.load(f)
+                    # Check if ANY entry has today's date
+                    if not any(item.get('date') == today_str for item in data):
+                        should_run = True
+            except:
+                should_run = True
+                
+        if should_run:
+            print("🚀 Auto-Startup: Daily Analysis missing for today. Running in background...")
+            # Run the script as a separate process to avoid blocking
+            try:
+                subprocess.Popen(["python", "daily_news_index.py"], cwd=os.path.dirname(__file__))
+            except Exception as e:
+                print(f"Failed to auto-start analysis: {e}")
+        else:
+            print("✅ Daily Analysis for today already exists.")
+
+    # Run check in thread to not delay startup
+    threading.Thread(target=run_analysis_if_needed).start()
+
+
+@app.get("/automation/tasks")
+def get_tasks_endpoint():
+    from automation import load_tasks
+    return load_tasks()
+
+@app.post("/automation/run/{task_id}")
+def run_task_endpoint(task_id: str, background_tasks: BackgroundTasks):
+    from automation import execute_task_now
+    # Run in background to not block
+    background_tasks.add_task(execute_task_now, task_id)
+    return {"status": "started", "message": f"Task {task_id} queued"}
+
+@app.get("/automation/briefings")
+def get_briefings_endpoint():
+    from automation import get_briefings
+    return get_briefings()
+
 class AIRequest(BaseModel):
     query: str
     context: Optional[str] = None
+
 
 @app.post("/ask_ai")
 def ask_ai_endpoint(req: AIRequest):
     from ai_service import ask_perplexity
     return ask_perplexity(req.query, req.context)
+
+@app.get("/automation/fx_scores")
+def get_fx_scores():
+    file_path = "daily_fx_scores.json"
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, "r") as f:
+                return json.load(f)
+        except:
+            return []
+    return []
+
 
 
 
@@ -671,10 +743,14 @@ def get_ticker_history(request: TickerHistoryRequest):
         
         # Use to_dict('records') for speed then process
         # Ensure we only pick what we need to minimize errors
-        if 'Close' not in df.columns:
-             return {"chart_data": []}
+        # check available columns
+        cols_to_fetch = ['Date', 'Close']
+        extra_cols = ['Open', 'High', 'Low', 'Volume']
+        for c in extra_cols:
+            if c in df.columns:
+                cols_to_fetch.append(c)
              
-        records = df[['Date', 'Close']].to_dict('records')
+        records = df[cols_to_fetch].to_dict('records')
         
         for row in records:
             # Handle Timestamp to string
@@ -682,16 +758,22 @@ def get_ticker_history(request: TickerHistoryRequest):
             date_str = d_val.isoformat() if hasattr(d_val, 'isoformat') else str(d_val)
             
             # Helper for JSON compliance (NaNs etc)
-            close_val = row['Close']
-            # Simple check for NaN (float('nan') != float('nan'))
             import math
-            if isinstance(close_val, float) and math.isnan(close_val):
-                close_val = None
-                
-            chart_data.append({
+            def safe_float(v):
+                if isinstance(v, float) and math.isnan(v):
+                    return None
+                return v
+
+            entry = {
                 "date": date_str,
-                "close": close_val
-            })
+                "close": safe_float(row.get('Close'))
+            }
+            if 'Open' in row: entry['open'] = safe_float(row['Open'])
+            if 'High' in row: entry['high'] = safe_float(row['High'])
+            if 'Low' in row: entry['low'] = safe_float(row['Low'])
+            if 'Volume' in row: entry['volume'] = safe_float(row['Volume'])
+                
+            chart_data.append(entry)
             
         return {"chart_data": chart_data}
     except Exception as e:
@@ -725,6 +807,75 @@ def run_screener(request: ScreenerRequest):
     index_name = request.index.lower()
     if index_name not in INDEX_FETCHERS:
         raise HTTPException(status_code=400, detail="Invalid index provided.")
+        
+class CycleRequest(BaseModel):
+    ticker: str
+    anchor_date: Optional[str] = None
+    max_cycles: Optional[int] = 20
+
+@app.post("/cycle_scan")
+def cycle_scan_endpoint(request: CycleRequest):
+    try:
+        from cycle_analysis import perform_cycle_analysis
+        from analysis import fetch_ticker_data
+        import pandas as pd
+        
+        # 1. Fetch Data
+        df = fetch_ticker_data(request.ticker)
+        
+        if df is None or df.empty:
+             raise HTTPException(status_code=404, detail="Ticker data not found")
+             
+        # Ensure Date column
+        if 'Date' not in df.columns:
+            df = df.reset_index()
+            
+        # 2. Anchor Logic (Slice Data if needed)
+        if request.anchor_date:
+            try:
+                anchor_dt = pd.to_datetime(request.anchor_date)
+                # We filter strictly <= anchor
+                df_slice = df[pd.to_datetime(df['Date']) <= anchor_dt].copy()
+                if len(df_slice) < 50:
+                    raise HTTPException(status_code=400, detail="Anchor date results in too little data (<50 bars)")
+            except Exception as e:
+                print(f"Anchor Date Error: {e}")
+                # Fallback to full data if parsing fails? Or error? Error is safer.
+                raise HTTPException(status_code=400, detail=f"Invalid anchor date: {str(e)}")
+        else:
+            df_slice = df
+            
+        # 3. Perform Analysis
+        results = perform_cycle_analysis(df_slice, max_period=None, top_n=request.max_cycles)
+        
+        if "error" in results:
+             raise HTTPException(status_code=400, detail=results["error"])
+             
+        # Add basic info
+        results["ticker"] = request.ticker
+        if request.anchor_date:
+             results["anchor_date"] = request.anchor_date
+             
+        # If anchored, we might want to return "Future" (Out-of-Sample) data separately for comparison?
+        # The frontend can fetch full history separately via /ticker_history if it wants to overlay "Real Price" vs "Projection".
+        # But for convenience, let's attach the "Real Price" for the out-of-sample period if available.
+        if request.anchor_date:
+             # Get out of sample data
+             df_oos = df[pd.to_datetime(df['Date']) > anchor_dt]
+             oos_data = []
+             for _, row in df_oos.iterrows():
+                 oos_data.append({
+                     "date": row['Date'].strftime('%Y-%m-%d'),
+                     "price": row['Close']
+                 })
+             results["oos_data"] = oos_data
+        
+        return results
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
         
     try:
         # Calculate min_year
@@ -817,6 +968,28 @@ def monte_carlo_endpoint(request: MonteCarloRequest):
             request.num_simulations
         )
         return result
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class CycleAnalysisRequest(BaseModel):
+    ticker: str
+    period: Optional[str] = "5y"
+
+@app.post("/cycles/analyze")
+def analyze_cycles_endpoint(request: CycleAnalysisRequest):
+    try:
+        from analysis import fetch_ticker_data
+        from cycle_analysis import perform_cycle_analysis
+        
+        df = fetch_ticker_data(request.ticker, period=request.period)
+        if df is None or df.empty:
+            raise HTTPException(status_code=404, detail="Ticker data not found")
+            
+        results = perform_cycle_analysis(df)
+        return results
     except Exception as e:
         import traceback
         traceback.print_exc()

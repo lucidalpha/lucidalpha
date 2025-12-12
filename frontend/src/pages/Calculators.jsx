@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { apiUrl } from '../config/api';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
 
 const Calculators = () => {
@@ -38,7 +39,7 @@ const Calculators = () => {
     const runRiskAnalysis = async () => {
         setRiskLoading(true);
         try {
-            const response = await fetch('http://localhost:8000/calculators/risk_analysis', {
+            const response = await fetch(apiUrl('/calculators/risk_analysis'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(riskParams)
@@ -54,7 +55,7 @@ const Calculators = () => {
     const runMonteCarlo = async () => {
         setMcLoading(true);
         try {
-            const response = await fetch('http://localhost:8000/calculators/monte_carlo', {
+            const response = await fetch(apiUrl('/calculators/monte_carlo'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(mcParams)

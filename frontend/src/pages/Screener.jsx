@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronRight, Settings } from 'lucide-react';
 
-const API_BASE = "http://localhost:8000";
+import API_BASE_URL from '../config/api';
+const API_BASE = API_BASE_URL;
 
 const Screener = () => {
     const [indices, setIndices] = useState([]);

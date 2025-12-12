@@ -4,6 +4,7 @@ import ValuationChart from './ValuationChart';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 import clsx from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -117,7 +118,7 @@ const FileUpload = () => {
         setValuationColumns([]);
 
         try {
-            const response = await axios.post('http://localhost:8000/upload', formData, {
+            const response = await axios.post(apiUrl('/upload'), formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             setUploadStatus('success');

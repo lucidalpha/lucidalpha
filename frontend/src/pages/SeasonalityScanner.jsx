@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -17,7 +18,7 @@ const SeasonalityScanner = () => {
         const fetchPatterns = async () => {
             try {
                 // Use port 8000 as per uvicorn command
-                const res = await axios.get('http://localhost:8000/analyze_all_assets');
+                const res = await axios.get(apiUrl('/analyze_all_assets'));
                 setPatterns(res.data);
             } catch (e) {
                 console.error(e);

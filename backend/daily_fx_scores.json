@@ -1,0 +1,502 @@
+[
+    {
+        "currency": "EURUSD",
+        "score": -0.15,
+        "decision": "FLAT",
+        "conviction": "Keine",
+        "summary": "EUR/USD hat sich in den letzten Wochen deutlich erholt und notiert aktuell um 1,17, aber die fundamentale Zins- und Wachstumsdynamik bleibt mittelfristig noch zugunsten des USD leicht konstruktiv, w\u00e4hrend die EZB zwar auf dem Weg der Normalisierung ist, aber vorsichtiger und datenabh\u00e4ngiger agiert als die Fed. Angesichts enger werdender, aber weiterhin bestehender Zinsdifferenzen, moderater Wachstumsschw\u00e4che im Euroraum gegen\u00fcber den USA, gemischtem Inflationsbild und fehlender klarer Risikoaversion am Markt erscheint das Chancen/Risiko-Verh\u00e4ltnis f\u00fcr neue mittelfristige EUR-Long- oder USD-Long-Engagements derzeit nicht attraktiv genug. Die Bewertung nahe den von Makro-Modellen gesch\u00e4tzten fairen Werten (ca. 1,15) signalisiert f\u00fcr 1\u20133 Monate eher Seitw\u00e4rtsrisiko als einen klaren Trend, weshalb eine Flat-Positionierung mit Fokus auf Datenabh\u00e4ngigkeit und Optionen-Strategien sinnvoller ist als eine gerichtete Futures-Position.",
+        "metrics": {
+            "interest_rate": -0.5,
+            "inflation": 0.25,
+            "gdp": -0.25,
+            "labor": -0.25,
+            "trade": 0.25,
+            "policy": -0.25,
+            "sentiment": 0,
+            "cot": 0,
+            "commodities": 0
+        },
+        "date": "2025-12-11",
+        "timestamp": 1765482070
+    },
+    {
+        "currency": "GBP/USD",
+        "score": 0.45,
+        "decision": "LONG",
+        "conviction": "Niedrig-Mittel",
+        "summary": "F\u00fcr die n\u00e4chsten 1\u20133 Monate \u00fcberwiegt ein leicht bullisher Bias f\u00fcr GBP/USD: Beide Zentralbanken (Fed und BoE) sind j\u00fcngst dovish umgeschwenkt, was den US-Dollar-Index unter Druck setzt und das Pfund unterst\u00fctzt.[3][9] Die kurzfristige Zinsdifferenz bleibt zwar eng und perspektivisch sind auf beiden Seiten erste Zinssenkungen eingepreist, allerdings ist der Markt zum Jahresende laut Bank of America leicht short im USD positioniert, was zus\u00e4tzlich Dollar-Schw\u00e4che beg\u00fcnstigt.[9] Makroseitig stabilisiert sich der Ausblick f\u00fcr das Vereinigte K\u00f6nigreich nach dem Herbsthaushalt,[3] w\u00e4hrend das Pfund 2025 insgesamt gegen\u00fcber dem Dollar aufgewertet hat und sich GBP/USD technisch in einem \u00fcbergeordneten Aufw\u00e4rtstrend mit j\u00fcngstem Ausbruch \u00fcber einen wichtigen Widerstand um 1,3350 bewegt.[4][7] Konsens- und Modellprognosen f\u00fcr 2025 sehen den Wechselkurs im Bereich 1,31\u20131,33 mit teils h\u00f6heren Jahresendzielen gro\u00dfer Banken, was in Summe ein Umfeld nahe fairer Bewertung mit leichtem Aufw\u00e4rtsspielraum signalisiert.[2][5] Vor diesem Hintergrund ist ein moderater Long-Ansatz mit reduzierter Positionsgr\u00f6\u00dfe gerechtfertigt, da die dovishe Neupositionierung beider Zentralbanken die Zinsdifferenzbegrenzung etwas zugunsten des Pfunds verschiebt, gleichzeitig aber das beidseitig dovishe Umfeld und eine wahrscheinliche Zinswende mittelfristig den Trend begrenzen.",
+        "metrics": {
+            "interest_rate": 0,
+            "inflation": 0,
+            "gdp": 0,
+            "labor": 0,
+            "trade": 0,
+            "policy": 0,
+            "sentiment": 1,
+            "cot": -1,
+            "commodities": 0
+        },
+        "date": "2025-12-11",
+        "timestamp": 1765482077
+    },
+    {
+        "currency": "EUR/USD",
+        "score": 0.55,
+        "decision": "LONG",
+        "conviction": "Niedrig-Mittel",
+        "summary": "EUR bleibt im mittelfristigen Zeithorizont leicht fundamental unterst\u00fctzt gegen\u00fcber dem USD: Zinsdifferenz und Forward Guidance sprechen nur noch f\u00fcr einen moderaten USD-Carry-Vorteil, w\u00e4hrend die Fed nach der j\u00fcngsten Zinssenkung klar in Richtung Lockerungszyklus dreht und die EZB deutlich vorsichtiger agiert. Die Inflationsdynamik in der Eurozone liegt nahe, aber nicht deutlich unter dem Ziel, was aggressive EZB-Cuts begrenzt, w\u00e4hrend in den USA die disinflation\u00e4re Tendenz die Realzinsen verringert und den zuvor ausgepr\u00e4gten USD-Bonus abschw\u00e4cht. Wachstum und Arbeitsmarkt sprechen weiterhin leicht f\u00fcr die USA, aber ohne zus\u00e4tzlichen Policy-Push f\u00fcr den Dollar. Au\u00dfenwirtschaftlich bleibt die Eurozone mit im Trend soliden Leistungsbilanz\u00fcbersch\u00fcssen ein struktureller Unterst\u00fctzungsfaktor f\u00fcr den Euro, w\u00e4hrend der Dollar als Safe Haven von aktuell eher konstruktivem Risk-On-Umfeld und starkem EUR-Aufw\u00e4rtstrend (technische Trendwende 2025) weniger profitiert.[1][2][4][5][6][7] Insgesamt ergibt sich ein leicht bullisher Bias f\u00fcr EUR/USD im 1\u20133-Monats-Horizont, jedoch ohne hinreichende Makro-Divergenz f\u00fcr eine hohe \u00dcberzeugung oder Maximal-Positionsgr\u00f6\u00dfe.",
+        "metrics": {
+            "interest_rate": 0.5,
+            "inflation": 0,
+            "gdp": -0.25,
+            "labor": -0.25,
+            "trade": 0.5,
+            "policy": 0.5,
+            "sentiment": 0.5,
+            "cot": 0,
+            "commodities": 0
+        },
+        "date": "2025-12-11",
+        "timestamp": 1765482280
+    },
+    {
+        "currency": "CHF/USD",
+        "score": 0.2,
+        "decision": "FLAT",
+        "conviction": "Keine",
+        "summary": "Makro- und Politikbild sprechen weiter f\u00fcr einen strukturell starken, aber bereits teuren Franken vs. USD; der kurzfristige Vorteil aus Zinsdifferenz und Safe-Haven-Status ist weitgehend eingepreist, w\u00e4hrend die Fed im Verh\u00e4ltnis zur SNB klar restriktiver bleibt \u2013 daraus ergibt sich auf 1\u20133 Monate kein ausreichend asymmetrisches Chance/Risiko-Verh\u00e4ltnis f\u00fcr neue CHF-Long- oder -Short-Engagements gegen den USD.",
+        "metrics": {
+            "interest_rate": -1,
+            "inflation": 0,
+            "gdp": 0,
+            "labor": 0,
+            "trade": 1,
+            "policy": -1,
+            "sentiment": 1,
+            "cot": 0,
+            "commodities": 0
+        },
+        "date": "2025-12-11",
+        "timestamp": 1765482294
+    },
+    {
+        "currency": "AUD/USD",
+        "score": 0.55,
+        "decision": "LONG",
+        "conviction": "Niedrig-Mittel",
+        "summary": "AUD/USD wird kurzfristig durch schw\u00e4chere australische Arbeitsmarktdaten belastet, bleibt aber mittelfristig unterst\u00fctzt durch eine im G10-Vergleich weiterhin hawkishe RBA und einen US\u2011Dollar, der nach der j\u00fcngsten Fed\u2011Zinssenkung und dovisheren Ausrichtung grunds\u00e4tzlich unter Druck steht. Die Zinsdifferenz zugunsten des USD ist zwar noch vorhanden, aber schrumpft, w\u00e4hrend der Markt f\u00fcr Australien in den n\u00e4chsten Monaten keine Cuts einpreist und sogar ein Restrisiko weiterer Hikes f\u00fcr 2026 sieht, was die Carry\u2011Attraktivit\u00e4t des AUD stabil h\u00e4lt.[3][5] Gleichzeitig bleibt das globale Sentiment eher risk-on bis neutral nach der Fed\u2011Entscheidung, was zyklische W\u00e4hrungen wie den AUD generell unterst\u00fctzt, auch wenn die \u00fcberraschend schwache Besch\u00e4ftigungsentwicklung im November (\u201121,3 Tsd. Jobs, Arbeitslosenquote stabil bei 4,3 %) den kurzfristigen Aufw\u00e4rtstrend gedeckelt hat.[3][5] Insgesamt sprechen moderat positive Zins\u2011/Policy\u2011Faktoren und ein konstruktives Risk\u2011Umfeld f\u00fcr einen leicht bullischen Bias im 1\u20113\u2011Monats\u2011Horizont, wobei das schw\u00e4chere Arbeitsmarkt\u2011Momentum und begrenzte Wachstumsdynamik die \u00dcberzeugung d\u00e4mpfen. Eine kleine bis moderate Long\u2011Position erscheint gerechtfertigt, idealerweise in Korrekturen Richtung 0,66 mit Zielzone 0,67\u20130,675, bei klar definiertem Risiko\u2011Management.",
+        "metrics": {
+            "interest_rate": 1,
+            "inflation": 0,
+            "gdp": 0,
+            "labor": -1,
+            "trade": 0,
+            "policy": 1,
+            "sentiment": 1,
+            "cot": 0,
+            "commodities": 0
+        },
+        "date": "2025-12-11",
+        "timestamp": 1765482304
+    },
+    {
+        "currency": "CAD/USD",
+        "score": 0.2,
+        "decision": "FLAT",
+        "conviction": "Keine",
+        "summary": "Kanada und USA liegen geldpolitisch im Moment eng beieinander, der CAD hat sich in den letzten Monaten gegen\u00fcber dem USD moderat aufgewertet und handelt aktuell nahe der mittleren Spanne des Jahres; gleichzeitig belasten ein weicherer Roh\u00f6lkomplex und ein nachlassender globaler Zyklus die wachstums- und terms-of-trade-Perspektiven Kanadas, w\u00e4hrend der US\u2011Dollar weiterhin durch seinen Safe-Haven-Status und robuste US\u2011Makrodaten unterst\u00fctzt wird. Insgesamt gleichen sich positive (Zinsdifferenz leicht zugunsten CAD, graduelle CAD-Aufwertung 2025, solide fiskalische und politische Stabilit\u00e4t in Kanada) und negative Faktoren (abk\u00fchlender globaler Zyklus, eher verhaltene BoC\u2011Forward-Guidance, fehlender klarer Rohstoff-R\u00fcckenwind, intakter USD\u2011Safe-Haven-Bid) weitgehend aus, sodass das Chance/Risiko\u2011Verh\u00e4ltnis f\u00fcr eine neue mittel\u00adfristige Directional-Position im CAD/USD derzeit nicht attraktiv genug ist, um \u00fcber ein taktisches Trading-Engagement hinauszugehen.",
+        "metrics": {
+            "interest_rate": 0,
+            "inflation": 0,
+            "gdp": 0,
+            "labor": 0,
+            "trade": 0,
+            "policy": 0,
+            "sentiment": 0,
+            "cot": 0,
+            "commodities": 0
+        },
+        "date": "2025-12-11",
+        "timestamp": 1765482311
+    },
+    {
+        "currency": "NZDUSD",
+        "score": 0.55,
+        "decision": "LONG",
+        "conviction": "Niedrig-Mittel",
+        "summary": "NZD bleibt im Kreuz mit dem USD moderat unterst\u00fctzt: Die RBNZ hat den Lockerungszyklus nach einem letzten 25bp\u2011Cut signalisiert weitgehend beendet und preist laut j\u00fcngster Kommunikation nur eine geringe Wahrscheinlichkeit weiterer Senkungen ein, womit NZ die Policy\u2011Rate klar \u00fcber den nun fallenden US\u2011Zinsen h\u00e4lt.[1][3] Zusammen mit einem wieder anziehenden globalen Risikoappetit, USD\u2011Schw\u00e4che nach dovisheren Fed\u2011Erwartungen und einer leichten Erholung beim Kiwi (6\u2011Wochen\u2011Hoch, positive 1M\u2011Performance) ergibt sich f\u00fcr 1\u20133 Monate ein leicht bullisher Bias, auch wenn das schwache globale Wachstum und die Abk\u00fchlung in China den exportorientierten NZ\u2011Ausblick und damit das Aufw\u00e4rtspotenzial begrenzen.[1][2][3] Entsprechend ist eine taktische Long\u2011Position mit reduzierter Gr\u00f6\u00dfe sinnvoll, jedoch ohne hohen Conviction\u2011Grad, da k\u00fcnftige Fed\u2011Signale und globale Risk\u2011Off\u2011Schocks das Chance/Risiko\u2011Verh\u00e4ltnis rasch drehen k\u00f6nnen.",
+        "metrics": {
+            "interest_rate": 1,
+            "inflation": 0,
+            "gdp": -1,
+            "labor": 0,
+            "trade": 0,
+            "policy": 1,
+            "sentiment": 1,
+            "cot": 0,
+            "commodities": 0
+        },
+        "date": "2025-12-11",
+        "timestamp": 1765482320
+    },
+    {
+        "currency": "DXY",
+        "score": -0.4,
+        "decision": "SHORT",
+        "conviction": "Niedrig-Mittel",
+        "summary": "Der Fed-Zyklus ist klar in die Lockerungsphase \u00fcbergegangen (erste 25bp-Senkung soeben, implizit weitere Lockerung eingepreist), w\u00e4hrend Wachstum und Arbeitsmarkt zwar abk\u00fchlen, aber noch keine harte Rezession signalisieren. Die reale Fed-Funds-Rate bleibt trotz der Senkung positiv bis leicht positiv, verliert aber sukzessive an Attraktivit\u00e4t gegen\u00fcber 2023/Fr\u00fch\u20112024. Die Inflation liegt nahe dem 2%-Ziel, Kerninflation ist fallend und gibt der Fed zus\u00e4tzlichen Spielraum f\u00fcr weitere vorsichtige Senkungen \u2013 das entzieht dem Dollar schrittweise Zinsunterst\u00fctzung. Der Arbeitsmarkt zeigt in den letzten Daten eine Serie schw\u00e4cherer NFP\u2011Berichte, flacheres Lohnwachstum und eine leichte Zunahme der Arbeitslosenquote, was die dovishe Neuausrichtung der Fed rechtfertigt. Gleichzeitig verschlechtern sich die US\u2011Fiskal- und Zinskostenperspektiven (hohes Defizit, hohe Schuldenquote, steigende Zinskosten des Staates), was mittel\u2011 bis l\u00e4ngerfristig ein strukturell negatives Narrativ f\u00fcr den USD st\u00fctzt. Auf der Sentimentseite hat der DXY in den letzten 12 Monaten deutlich korrigiert (rund \u22128% YoY) und notiert aktuell im Bereich 98\u201399, w\u00e4hrend die Fed\u2011Entscheidung den Index kurzfristig weiter belastet hat.[2][4] Der Markt erwartet laut Modellen von Trading Economics f\u00fcr die n\u00e4chsten Monate eher eine Seitw\u00e4rts- bis leicht schw\u00e4chere Tendenz (Prognose in 12 Monaten unter dem aktuellen Niveau), was mit einem abnehmenden US\u2011Zinsvorsprung und zunehmendem globalem Risk\u2011On\u2011Umfeld (Aktienm\u00e4rkte robust, Volatilit\u00e4t moderat) konsistent ist.[2] Insgesamt spricht die Kombination aus beginnendem Fed\u2011Lockerungszyklus, nachlassender realer Zinsattraktivit\u00e4t und leichtem Risk\u2011On f\u00fcr einen moderat bearishen Bias im DXY \u00fcber 1\u20133 Monate, allerdings ohne starkes \u00dcberzeugungssignal, da der Dollar im Abschwung bereits einen Teil der Bewegung vorweggenommen hat und weiterhin Safe\u2011Haven\u2011Unterst\u00fctzung im Falle von Marktschocks behalten d\u00fcrfte.",
+        "metrics": {
+            "interest_rate": -1,
+            "inflation": 0,
+            "gdp": -0.5,
+            "labor": -0.5,
+            "trade": 0,
+            "policy": -1,
+            "sentiment": -0.5,
+            "cot": 0,
+            "commodities": 0
+        },
+        "date": "2025-12-11",
+        "timestamp": 1765482337
+    },
+    {
+        "currency": "EUR",
+        "score": 0.55,
+        "decision": "LONG",
+        "conviction": "Niedrig-Mittel",
+        "summary": "EUR bleibt im mittelfristigen Zeithorizont (1-3 Monate) leicht fundamental unterst\u00fctzt gegen\u00fcber dem USD. EUR/USD notiert bei ca. 1.17 mit Aufw\u00e4rtstrend, getrieben durch Fed-Zinssenkungserwartungen (94% f\u00fcr Dezember-Cut), dovish Fed-Ausblick und stabile EZB-Kommunikation. Zinsdifferenz beg\u00fcnstigt USD nur moderat, Eurozone-Daten solide, Leistungsbilanz\u00fcberschuss strukturell bullish. Wachstum/USA leicht st\u00e4rker, aber Risk-On und Prognosen (1.16-1.22 Ende 2025) st\u00fctzen EUR-Bias. Konsistent mit vorheriger Analyse.",
+        "metrics": {
+            "interest_rate": 1,
+            "inflation": 0,
+            "gdp": -1,
+            "labor": -1,
+            "trade": 1,
+            "policy": 1,
+            "sentiment": 1,
+            "cot": 0,
+            "commodities": 0
+        },
+        "date": "2025-12-10",
+        "timestamp": 1765321200
+    },
+    {
+        "currency": "GBP/USD",
+        "score": 0.45,
+        "decision": "LONG",
+        "conviction": "Niedrig-Mittel",
+        "summary": "Der makrofundamentale Bias f\u00fcr GBP/USD bleibt im 1\u20133-Monats-Horizont leicht bullisch: Sowohl Fed als auch BoE sind inzwischen klar in den Zinswende-Modus \u00fcbergegangen, wodurch der zuvor st\u00fctzende USD-Zinsvorsprung erodiert und der Dollar tendenziell Gegenwind bekommt, w\u00e4hrend GBP nach dem Herbsthaushalt und verbesserten OBR-Prognosen fiskalisch etwas stabiler wirkt.[4][5] GBP/USD handelt weiterhin in einem \u00fcbergeordneten Aufw\u00e4rtstrend mit intaktem bullischem Kanal; kurzfristige Korrekturen in Richtung 1,33 werden von mehreren Prognosen als Kaufgelegenheit in Richtung 1,35\u20131,36 gesehen, was mit Intermarket- und Elliott-Wave-Forecasts \u00fcbereinstimmt, die bis Februar/M\u00e4rz eine Aufw\u00e4rtsphase f\u00fcr das Pfund signalisieren.[2][5] Da beide Zentralbanken in Richtung Zinssenkungen drehen, ist der absolute Zinspfad f\u00fcr sich genommen kein starker Treiber mehr; der Vorteil liegt eher in der relativen Entspannung der Fed vs. leicht restriktiverer BoE-Kommunikation, kombiniert mit einer noch immer nicht extrem \u00fcberkauften GBP-Positionierung und einem USD, der nach der starken 2024/Fr\u00fch-2025-Rally anf\u00e4llig f\u00fcr weitere Gewinnmitnahmen bleibt. Angesichts der gleichgerichtet dovishen Geldpolitik und nachlassender Inflationsdynamik auf beiden Seiten ist jedoch kein aggressiver Trend zu erwarten; ein moderater Long mit reduzierter Positionsgr\u00f6\u00dfe bleibt angemessen, solange 1,32/1,3245 als technische und fundamental unterst\u00fctzte Absicherungszone h\u00e4lt.[2][4]",
+        "metrics": {
+            "interest_rate": 0,
+            "inflation": 1,
+            "gdp": 0,
+            "labor": 1,
+            "trade": 0,
+            "policy": 0,
+            "sentiment": 1,
+            "cot": 0,
+            "commodities": 0
+        },
+        "date": "2025-12-10",
+        "timestamp": 1765321200
+    },
+    {
+        "currency": "JPY",
+        "score": 0.6,
+        "decision": "LONG",
+        "conviction": "Niedrig-Mittel",
+        "summary": "F\u00fcr den 1\u20133-Monats-Horizont \u00fcberwiegt ein leicht bullisher Bias f\u00fcr den JPY gegen\u00fcber dem USD: Die BoJ steht trotz konjunktureller Schw\u00e4che unmittelbar vor einer weiteren Zinserh\u00f6hung (wahrscheinlich von 0,5 % auf 0,75 %), w\u00e4hrend der Markt beim Fed-Zinsplateau bzw. moderaten Senkungserwartungen angekommen ist, wodurch sich die Zinsdifferenz leicht zugunsten des JPY verengt.[2][3][8] Die Inflation liegt um 3 % klar \u00fcber dem BoJ-Ziel und d\u00fcrfte mittelfristig nicht unter 2 % fallen, was die Normalisierung der Geldpolitik st\u00fctzt.[3][4][7] Gegenwind kommt von der aktuell negativen Wachstumsdynamik (BIP-R\u00fcckgang im Q3) und einem insgesamten global verhaltenen Wachstum, was Risk-Off-Phasen zwar tendenziell JPY st\u00fctzt, aber die heimische Konjunktur belastet.[1][2][6] Insgesamt rechtfertigt dies eine moderat lange JPY-Position (Short USD/JPY) mit reduzierter Positionsgr\u00f6\u00dfe.",
+        "metrics": {
+            "interest_rate": 1,
+            "inflation": 1,
+            "gdp": -1,
+            "labor": 0,
+            "trade": 0,
+            "policy": 1,
+            "sentiment": 1,
+            "cot": 0,
+            "commodities": 0
+        },
+        "date": "2025-12-10",
+        "timestamp": 1765321200
+    },
+    {
+        "currency": "CHF",
+        "score": 0.1,
+        "decision": "FLAT",
+        "conviction": "Keine",
+        "summary": "Der CHF bleibt strukturell stark gegen\u00fcber dem USD durch Safe-Haven-Status und Handels\u00fcbersch\u00fcsse, aber der j\u00fcngste R\u00fcckgang des USD/CHF auf ~0.795 zeigt, dass dies weitgehend eingepreist ist. Fed bleibt restriktiver als SNB, Zinsdifferenz favorisiert USD leicht, jedoch kein asymmetrisches Risiko/Ertrag-Verh\u00e4ltnis f\u00fcr 1-3 Monate. Konsistent mit vorheriger FLAT-Bewertung.",
+        "metrics": {
+            "interest_rate": -1,
+            "inflation": 0,
+            "gdp": 0,
+            "labor": 1,
+            "trade": 2,
+            "policy": -1,
+            "sentiment": -1,
+            "cot": 0,
+            "commodities": 0
+        },
+        "date": "2025-12-10",
+        "timestamp": 1765321200
+    },
+    {
+        "currency": "AUD/USD",
+        "score": 0.55,
+        "decision": "LONG",
+        "conviction": "Niedrig-Mittel",
+        "summary": "Der fundamentale Bias f\u00fcr AUD/USD bleibt im 1\u20133\u2011Monats\u2011Horizont leicht bullisch: Die RBA h\u00e4lt einen klar hawkishen Kurs mit der Option weiterer Zinserh\u00f6hungen und ohne eingepreiste Cuts, w\u00e4hrend die Fed nach dem j\u00fcngsten Zinsschnitt und dovisheren Kommunikation den US\u2011Dollar strukturell belastet.[4][6][7] Die Zinsdifferenz bleibt zwar noch zugunsten der USA, verengt sich aber und der Markt erwartet f\u00fcr Australien eher stabile bis tendenziell h\u00f6here reale Zinsen im G10\u2011Vergleich, was den Carry des AUD st\u00fctzt.[4][6] Gegenwind kommt von den zuletzt deutlich schw\u00e4cheren australischen Arbeitsmarktdaten (November: \u221221,3 Tsd. Stellen, Arbeitslosenquote 4,3 %), die das kurzfristige Momentum des AUD d\u00e4mpfen und die Rallye in eine Seitw\u00e4rts-/Korrekturphase um 0,66\u20130,667 zwingen.[3][4][8] Das globale Sentiment ist nach der Fed\u2011Entscheidung \u00fcberwiegend risk\u2011on bis neutral, was zyklische W\u00e4hrungen wie den AUD grunds\u00e4tzlich unterst\u00fctzt und das Abw\u00e4rtsrisiko begrenzt, solange keine neue Risk\u2011Off\u2011Welle einsetzt.[2][3][6] Insgesamt rechtfertigt die Kombination aus hawkisher RBA, nachlassender USD\u2011St\u00e4rke und konstruktivem Sentiment, bei zugleich abk\u00fchlendem, aber nicht einbrechendem australischem Arbeitsmarkt, weiterhin eine kleine bis moderate Long\u2011Position, vorzugsweise auf R\u00fccksetzer in den Bereich 0,663\u20130,66 mit Zielzone 0,67\u20130,675 und strikt eingegrenztem Risiko.",
+        "metrics": {
+            "interest_rate": 1,
+            "inflation": 1,
+            "gdp": 0,
+            "labor": -1,
+            "trade": 0,
+            "policy": 1,
+            "sentiment": 1,
+            "cot": 0,
+            "commodities": 0
+        },
+        "date": "2025-12-10",
+        "timestamp": 1765321200
+    },
+    {
+        "currency": "CAD",
+        "score": 0.1,
+        "decision": "FLAT",
+        "conviction": "Keine",
+        "summary": "Der CAD/USD bleibt neutral positioniert. Positive Faktoren wie die k\u00fcrzliche Aufwertung des CAD um 1,88% im Monat und stabile BoC-Politik bei 2,25% gleichen die USD-Schw\u00e4che durch Fed-Senkungserwartungen (auf 3,4% bis 2026), fehlenden \u00d6l-R\u00fcckenwind und anhaltenden USD-Safe-Haven-Status aus. Konsistent mit vorherigem FLAT-Bias, da Chance/Risiko-Verh\u00e4ltnis f\u00fcr directional Positionen nicht attraktiv.",
+        "metrics": {
+            "interest_rate": 0,
+            "inflation": 0,
+            "gdp": 0,
+            "labor": 0,
+            "trade": -1,
+            "policy": 0,
+            "sentiment": 0,
+            "cot": 0,
+            "commodities": -1
+        },
+        "date": "2025-12-10",
+        "timestamp": 1765321200
+    },
+    {
+        "currency": "NZD/USD",
+        "score": 0.6,
+        "decision": "LONG",
+        "conviction": "Niedrig-Mittel",
+        "summary": "NZD profitiert mittel\u00adfristig von relativ hohen Realzinsen und einer weniger doven RBNZ im Vergleich zur nun klar in den Senkungszyklus eingetretenen Fed, w\u00e4hrend globale Risiko\u00adstimmung neutral bis leicht positiv ist und die j\u00fcngste NZD-St\u00e4rke noch nicht extrem \u00fcberkauft wirkt.",
+        "metrics": {
+            "interest_rate": 1,
+            "inflation": 0,
+            "gdp": 0,
+            "labor": 0,
+            "trade": 0,
+            "policy": 1,
+            "sentiment": 1,
+            "cot": 0,
+            "commodities": 1
+        },
+        "date": "2025-12-10",
+        "timestamp": 1765321200
+    },
+    {
+        "currency": "DXY",
+        "score": -0.5,
+        "decision": "SHORT",
+        "conviction": "Niedrig-Mittel",
+        "summary": "Der DXY bleibt unter Druck durch den abgeschlossenen Fed-Lockerungszyklus (erste Zinssenkung bereits erfolgt, weitere implizit eingepreist), fallende reale Zinsen und ein leicht risk-on Sentiment. Technische Analysen zeigen bearishe Sequenzen mit Zielen bei 97-96, DXY notiert unter Schl\u00fcssel-MAs (50-Tage: 99.14, 200-Tage: 99.52) bei RSI 41.65. Arbeitsmarkt k\u00fchlt ab (schw\u00e4chere NFP, steigende Arbeitslosigkeit), Fiskaldefizite belasten langfristig. Konsistent mit vorherigem Bias (-0.4), da keine neuen bullishen Daten in den letzten 48h; FOMC Dot Plot erwartet weitere Cuts, erodierend Zinsvorteil.",
+        "metrics": {
+            "interest_rate": -2,
+            "inflation": 0,
+            "gdp": 0,
+            "labor": -1,
+            "trade": 0,
+            "policy": -2,
+            "sentiment": -1,
+            "cot": 0,
+            "commodities": 0
+        },
+        "date": "2025-12-10",
+        "timestamp": 1765321200
+    },
+    {
+        "currency": "JPY",
+        "score": 0.2,
+        "decision": "FLAT",
+        "conviction": "Keine",
+        "summary": "Die BoJ steht kurz vor einer weiteren, vorsichtigen Zinsanhebung (voraussichtlich von 0,50 % auf 0,75 %), w\u00e4hrend die Kerninflation stabil deutlich \u00fcber dem 2 %-Ziel liegt und reale Zinsen damit weniger negativ werden \u2013 das ist grunds\u00e4tzlich JPY-st\u00fctzend.[2][7] Gleichzeitig ist die Konjunktur ins Stocken geraten: Das BIP ist im Q3 annualisiert um rund 2\u20132,3 % geschrumpft, Unternehmensinvestitionen sind r\u00fcckl\u00e4ufig, und Reall\u00f6hne sinken \u2013 ein Argument f\u00fcr vorsichtige, graduelle Straffung und limitiertes Zinsaufw\u00e4rtspotenzial.[1][5][1] Die Industrieproduktion w\u00e4chst zwar wieder leicht (ca. +1,5 % YoY), doch insgesamt signalisiert das Bild eher eine fragile Erholung als dynamisches Wachstum.[4] Die Inflation liegt mit ca. 3 % (Headline und Kern) stabil oberhalb des Ziels und d\u00fcrfte laut Einsch\u00e4tzungen mittelfristig \u00fcber 2 % bleiben, womit die Phase chronisch niedriger oder negativer Inflation beendet scheint und der Spielraum f\u00fcr weitere Normalisierung der Geldpolitik erhalten bleibt.[2][3][8] Die BoJ reduziert bereits moderat ihre Anleihek\u00e4ufe, bleibt aber extrem vorsichtig, um Marktverwerfungen und einen zu starken Zinsanstieg zu vermeiden \u2013 Forward Guidance ist damit nur leicht hawkish.[3][6] Politisch ist Japan unter Premierministerin Takaichi relativ stabil, mit einem gro\u00dfen Konjunkturpaket (17,7 Bio. Yen) und h\u00f6heren Verteidigungsausgaben, was fiskalisch unterst\u00fctzend, aber bei hoher Staatsverschuldung langfristig riskant ist.[1][3] F\u00fcr die n\u00e4chsten 1\u20133 Monate spricht die Kombination aus etwas steigenden (aber niedrigen) realen Zinsen, strukturell h\u00f6herer Inflation und gradueller Normalisierung zwar f\u00fcr eine gewisse JPY-Stabilisierung versus USD, jedoch begrenzen das schwache Wachstum und das weltweit weiterhin hohe Zinsniveau (besonders in den USA) das Aufwertungspotenzial. Ohne explizite, sehr starke Risk-Off-Phase an den globalen M\u00e4rkten \u00fcberwiegt daher ein neutraler Bias \u2013 der JPY bleibt Safe Haven, aber Makro-Fundamentaldaten rechtfertigen aktuell weder eine aggressive Long- noch eine Short-Position gegen\u00fcber dem USD.",
+        "metrics": {
+            "interest_rate": 0,
+            "inflation": 1,
+            "gdp": -1,
+            "labor": -1,
+            "trade": 0,
+            "policy": 0,
+            "sentiment": 1,
+            "cot": 0,
+            "commodities": 0
+        },
+        "date": "2025-12-11",
+        "timestamp": 1765407600
+    },
+    {
+        "currency": "NZD",
+        "score": 0.8,
+        "decision": "LONG",
+        "conviction": "Mittel-Hoch",
+        "summary": "NZD/USD bleibt mittelfristig bullish aufgrund der hawkishen RBNZ-Politik, die den Lockerungszyklus beendet hat, im Kontrast zur dovishen Fed mit Zinssenkung und Pausen-Signal. NZD profitiert von USD-Schw\u00e4che nach Fed-Entscheidung, stabiler Position \u00fcber 0.5800 und neutral-positiver Risikostimmung. Konsistent mit gestern (Score 0.6), da keine neuen Daten grundlegend \u00e4ndern.",
+        "metrics": {
+            "interest_rate": 2,
+            "inflation": 0,
+            "gdp": 0,
+            "labor": 0,
+            "trade": 0,
+            "policy": 2,
+            "sentiment": 1,
+            "cot": 0,
+            "commodities": 0
+        },
+        "date": "2025-12-11",
+        "timestamp": 1765407600
+    },
+    {
+        "currency": "GBP",
+        "score": 0.45,
+        "decision": "LONG",
+        "conviction": "Niedrig-Mittel",
+        "summary": "Leicht bullisher Bias f\u00fcr GBP/USD im 1-3-Monats-Horizont bleibt bestehen: GBP/USD notiert bei ca. 1.3390 mit +0.01% am 12.12.2025 und +1.90% im Monat, unterst\u00fctzt durch dovishe Wendung beider Zentralbanken (Fed/BoE), erodierenden USD-Zinsvorsprung und stabilisierende UK-Fiskallage nach Herbsthaushalt. J\u00e4hrliche Aufwertung +5.60-7.00% und intakter Aufw\u00e4rtstrend rechtfertigen moderaten Long-Ansatz mit reduzierter Positionsgr\u00f6\u00dfe, da beidseitig dovishe Politik Trend begrenzt.[1][2][3]",
+        "metrics": {
+            "interest_rate": 1,
+            "inflation": 0,
+            "gdp": 0,
+            "labor": 0,
+            "trade": 0,
+            "policy": -1,
+            "sentiment": 1,
+            "cot": 0,
+            "commodities": 0
+        },
+        "date": "2025-12-12",
+        "timestamp": 1765494000
+    },
+    {
+        "currency": "JPYUSD",
+        "score": -1.45,
+        "decision": "SHORT",
+        "conviction": "Hoch",
+        "summary": "Fundamental bleibt der Yen gegen\u00fcber dem US\u2011Dollar klar strukturell schwach: Die Zinsdifferenz zur Fed ist trotz gradueller Normalisierung der BoJ weiterhin massiv negativ, die reale Rendite des JPY liegt weit unter der des USD, und die BoJ bleibt im globalen Vergleich die mit Abstand am lockersten ausgerichtete G10\u2011Zentralbank. Gleichzeitig ist das globale Risikosentiment nur leicht eingetr\u00fcbt, was den Safe\u2011Haven\u2011Vorteil des Yen begrenzt, w\u00e4hrend die noch immer robuste US\u2011Konjunktur und ein sehr starker US\u2011Arbeitsmarkt die Erwartung h\u00f6herer US\u2011Realzinsen verfestigen. Japans Leistungsbilanz ist zwar im \u00dcberschuss, aber Kapitalabfl\u00fcsse japanischer Anleger (Suche nach Rendite im Ausland) wirken dem st\u00fctzendem Effekt entgegen. Insgesamt sprechen die Kombination aus weiter extremen Zinsdifferenzen, \u00fcberwiegend dovisher BoJ\u2011Kommunikation und nur moderatem Risk\u2011Off\u2011Umfeld klar f\u00fcr eine Fortsetzung der Yen\u2011Schw\u00e4che im 1\u20133\u2011Monats\u2011Horizont \u2013 damit bleibt der Bias f\u00fcr JPY/USD (JPY als Basis, USD als Quote) klar bearish, was in der Terminwelt einem Short\u2011Engagement im JPY bzw. Long USD/JPY entspricht.",
+        "metrics": {
+            "interest_rate": -2,
+            "inflation": -1,
+            "gdp": 0,
+            "labor": -1,
+            "trade": 1,
+            "policy": -2,
+            "sentiment": -1,
+            "cot": 0,
+            "commodities": 0
+        },
+        "date": "2025-12-12",
+        "timestamp": 1765494000
+    },
+    {
+        "currency": "CHF/USD",
+        "score": 0.2,
+        "decision": "FLAT",
+        "conviction": "Keine",
+        "summary": "Der Franken bleibt gegen\u00fcber dem US\u2011Dollar strukturell stark und hoch bewertet (USD/CHF um 0,79, d.h. CHF/USD ca. 1,26), w\u00e4hrend der fundamentale Zins- und Wachstumsvorteil weiter klar beim USD liegt.[1][2][4][5] Da sich in den letzten 24\u201348 Stunden weder bei Fed noch SNB ein signifikanter Shift in der Forward Guidance ergeben hat und der Markt den Safe-Haven- und realzinsseitigen Vorteil des CHF nach der rund 11%igen USD/CHF\u2011Abwertung \u00fcber 12 Monate weitgehend eingepreist hat,[1][4][9] bleibt das Chance/Risiko-Verh\u00e4ltnis auf 1\u20133 Monate f\u00fcr neue CHF-Long- oder -Short-Engagements gegen den USD unattraktiv \u2013 die Voranalyse (Score 0.2, FLAT) wird daher unver\u00e4ndert beibehalten.",
+        "metrics": {
+            "interest_rate": -0.5,
+            "inflation": 0.2,
+            "gdp": -0.1,
+            "labor": 0.0,
+            "trade": 0.5,
+            "policy": -0.2,
+            "sentiment": 0.2,
+            "cot": 0.0,
+            "commodities": 0.0
+        },
+        "date": "2025-12-12",
+        "timestamp": 1765494000
+    },
+    {
+        "currency": "AUD/USD",
+        "score": 0.55,
+        "decision": "LONG",
+        "conviction": "Niedrig-Mittel",
+        "summary": "Das fundamentale Bild f\u00fcr AUD/USD bleibt im 1\u20133\u2011Monats\u2011Horizont leicht bullisch und konsistent mit den Voranalysen: Die RBA verfolgt weiterhin einen im G10\u2011Vergleich hawkishen Kurs mit hohen realen Zinsen und ohne eingepreiste Zinssenkungen, w\u00e4hrend der US\u2011Dollar nach den j\u00fcngsten Fed\u2011Cuts strukturell unter Druck steht.[3][5][8] Schw\u00e4chere australische Arbeitsmarktdaten (November: \u221221,3 Tsd. Stellen, Arbeitslosenquote 4,3 %) begrenzen jedoch kurzfristig das Aufw\u00e4rtspotenzial und haben zu einer Korrektur von den fast 3\u2011Monats\u2011Hochs bei 0,668\u20130,671 auf den Bereich um 0,663\u20130,666 gef\u00fchrt, ohne das \u00fcbergeordnete bullische Bild zu zerst\u00f6ren.[2][3][5][8] Das globale Sentiment bleibt \u00fcberwiegend risk\u2011on bis neutral, technisch konsolidiert das Paar knapp unter dem Widerstand um 0,667/0,671 mit Raum f\u00fcr eine Fortsetzung des Aufw\u00e4rtstrends nach einer m\u00f6glichen weiteren Korrektur Richtung 0,663\u20130,664, was eine kleine bis moderate taktische Long\u2011Position auf R\u00fccksetzer mit Zielzone 0,67\u20130,675 rechtfertigt und einem klar definierten Stopp unterhalb von 0,657\u20130,66.",
+        "metrics": {
+            "interest_rate": 1,
+            "inflation": 0,
+            "gdp": 0,
+            "labor": -1,
+            "trade": 0,
+            "policy": 1,
+            "sentiment": 1,
+            "cot": 0,
+            "commodities": 0
+        },
+        "date": "2025-12-12",
+        "timestamp": 1765494000
+    },
+    {
+        "currency": "CAD",
+        "score": 0.1,
+        "decision": "FLAT",
+        "conviction": "Keine",
+        "summary": "Geldpolitische Konvergenz zwischen BoC (Leitzins 2,25%, stabil) und Fed (erwartete Senkungen auf 3,4% bis 2026) bleibt erhalten; CAD hat sich k\u00fcrzlich um 1,88% im Monat und 3,28% YoY aufgewertet (USD/CAD bei 1,3773), doch weicher \u00d6lkomplex und USD-Safe-Haven-Status balancieren dies aus. Prognosen sehen moderaten CAD-Anstieg 2025, aber aktuelle Daten zeigen keine neuen Katalysatoren f\u00fcr directional Bias; Chance/Risiko neutral f\u00fcr medium-term[1][2][4][6].",
+        "metrics": {
+            "interest_rate": 0,
+            "inflation": 0,
+            "gdp": -1,
+            "labor": 0,
+            "trade": 0,
+            "policy": 0,
+            "sentiment": -1,
+            "cot": 0,
+            "commodities": -1
+        },
+        "date": "2025-12-12",
+        "timestamp": 1765494000
+    },
+    {
+        "currency": "NZD",
+        "score": 0.7,
+        "decision": "LONG",
+        "conviction": "Mittel-Hoch",
+        "summary": "NZD/USD zeigt St\u00e4rke um 0.5800-0.5816 nach Fed-Zinssenkung, mit Breakout \u00fcber wichtigen Widerstand und anhaltendem Aufw\u00e4rtstrend trotz gemischter technischer Signale. Hohe Realzinsen NZ vs. dovishe Fed, neutrale Risk-Stimmung und k\u00fcrzliche Rallye unterst\u00fctzen medium-term LONG-Bias konsistent mit vorherigem Score von 0.6. Erwartete RBNZ-Senkungen balancieren, aber USD-Schw\u00e4che dominiert kurzfristig.",
+        "metrics": {
+            "interest_rate": 1,
+            "inflation": 0,
+            "gdp": 0,
+            "labor": 0,
+            "trade": 0,
+            "policy": 1,
+            "sentiment": 1,
+            "cot": 0,
+            "commodities": 0
+        },
+        "date": "2025-12-12",
+        "timestamp": 1765494000
+    },
+    {
+        "currency": "DXY",
+        "score": -0.5,
+        "decision": "SHORT",
+        "conviction": "Mittel-Hoch",
+        "summary": "Die Fundamentallage f\u00fcr den US\u2011Dollar bleibt gegen\u00fcber gestern weitgehend unver\u00e4ndert: Der Fed\u2011Zyklus ist in einer klaren, aber graduellen Lockerungsphase, die implizit weitere Zinssenkungen \u00fcber die n\u00e4chsten Quartale einpreist. Die realen Fed\u2011Funds\u2011Zinsen bleiben zwar noch leicht positiv, verlieren aber sukzessive an Attraktivit\u00e4t, w\u00e4hrend die Inflation nahe dem 2%-Ziel verharrt und die Kerninflation weiter Richtung Ziel tendiert \u2013 dies validiert eine vorsichtig dovishe Fed-Ausrichtung und reduziert den Zinsvorsprung des USD schrittweise. Das Wachstum und der Arbeitsmarkt k\u00fchlen weiter ab, jedoch ohne akute Rezessionssignale, was der Fed erlaubt, datenabh\u00e4ngig, aber tendenziell locker zu agieren, ohne durch \u00dcberhitzung gezwungen zu werden, wieder hawkisher zu werden. Fiskalisch bleiben das hohe Defizit, die steigende Zinslast und die hohe Schuldenquote ein strukturell negatives Narrativ f\u00fcr den Dollar, auch wenn dies im 1\u20133\u2011Monats\u2011Horizont eher die Risikopr\u00e4mie als den Tageskurs bestimmt. Auf der Sentimentseite bleibt der DXY in einem intakten kurzfristigen Abw\u00e4rtstrend: Der Index handelt unter 50\u2011 und 200\u2011Tage\u2011Durchschnitt, mit klar bearishen technischen Signalen (RSI im unteren Bereich, technische Analysten sehen Sequenzen mit Zielen in der Zone 97\u201398), was das fundamental bereits schw\u00e4chere Zins\u2011Narrativ verst\u00e4rkt.[1][2][3][6] Gleichzeitig ist das globale Risiko-Sentiment eher leicht risk-on (robuste Aktienm\u00e4rkte, moderate Volatilit\u00e4t), wodurch die Safe-Haven-Nachfrage nach USD ged\u00e4mpft bleibt. Insgesamt ergibt sich f\u00fcr die n\u00e4chsten 1\u20133 Monate ein weiterhin moderat bis deutlich bearish gepr\u00e4gter Bias f\u00fcr den DXY, jedoch ohne extremes Conviction-Signal, da der Index bereits rund 8\u20139% gegen\u00fcber den Hochs der letzten 12\u201318 Monate korrigiert hat und im Falle exogener Schocks jederzeit tempor\u00e4r Safe-Haven-Unterst\u00fctzung erfahren kann. Die Kombinationswirkung der Faktoren (fallende reale Zinsattraktivit\u00e4t, dovishe Fed, leichte Risk-On-Stimmung, schwaches technisches Bild, aber noch solide Makrodaten ohne harte Rezession) rechtfertigt konsistent mit den letzten Tagen einen leicht bis moderat negativen Gesamtscore um -0.5 und damit eine SHORT-Positionierung mit normaler Positionsgr\u00f6\u00dfe f\u00fcr einen 1\u20133\u2011Monats\u2011Horizont.",
+        "metrics": {
+            "interest_rate": -1,
+            "inflation": 0,
+            "gdp": -1,
+            "labor": -1,
+            "trade": 0,
+            "policy": -1,
+            "sentiment": -1,
+            "cot": 0,
+            "commodities": 0
+        },
+        "date": "2025-12-12",
+        "timestamp": 1765494000
+    }
+]

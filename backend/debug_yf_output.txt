@@ -1,0 +1,10 @@
+Attempting to download AAPL...
+Empty? False
+Shape: (251, 6)
+Columns: ['Adj Close', 'Close', 'High', 'Low', 'Open', 'Volume']
+First 2 rows:
+             Adj Close       Close        High         Low        Open    Volume
+Date                                                                            
+2024-12-12  246.843582  247.960007  248.740005  245.679993  246.889999  32777500
+2024-12-13  247.012817  248.130005  249.289993  246.240005  247.820007  33155300
+Columns are flat.

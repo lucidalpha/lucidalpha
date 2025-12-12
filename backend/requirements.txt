@@ -6,3 +6,7 @@ openpyxl
 requests
 yfinance
 python-dotenv
+APScheduler
+statsmodels>=0.13.0
+scipy>=1.7.0
+numpy>=1.21.0

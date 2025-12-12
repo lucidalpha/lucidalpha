@@ -6,16 +6,17 @@ import functools
 import requests
 
 
-@functools.lru_cache(maxsize=32)
-def fetch_ticker_data(ticker):
+# @functools.lru_cache(maxsize=32)
+def fetch_ticker_data(ticker, period="max"):
+    print(f"DEBUG: Fetching ticker data for {ticker} (Cache disabled)...")
     """
     Fetches historical data using yfinance library for better reliability.
     """
     try:
         # Use yfinance download
-        # period="max" or "20y" to ensure we have enough history for lookback
+        # period="max" or specific period like "5y"
         # Use auto_adjust=False to get raw Close (matching standard charts)
-        df = yf.download(ticker, period="max", interval="1d", auto_adjust=False, progress=False, multi_level_index=False)
+        df = yf.download(ticker, period=period, interval="1d", auto_adjust=False, progress=False, multi_level_index=False)
 
         
         if df.empty:

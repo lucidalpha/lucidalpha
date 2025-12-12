@@ -1,0 +1,31 @@
+# Dependencies
+.venv
+__pycache__
+
+# Debug files
+debug_*.py
+debug_*.txt
+*.log
+
+# IDE
+.vscode
+.idea
+
+# Git
+.git
+.gitignore
+
+# Tests
+test_*.py
+
+# Large data files (mounted via volumes)
+# Keep the smaller essential CSVs for CoT data
+# *.csv
+
+# Compiled Python
+*.pyc
+.pytest_cache
+
+# Uploads and Reports (mounted via volumes)
+# uploads/
+# reports/

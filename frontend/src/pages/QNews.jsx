@@ -1,147 +1,155 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Loader2, Send, Sparkles, Newspaper, TrendingUp, Globe, AlertTriangle } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { apiUrl } from '../config/api';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { Newspaper, TrendingUp, Activity, RefreshCw } from 'lucide-react';
 
 const QNews = () => {
-    const [query, setQuery] = useState("");
-    const [response, setResponse] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [history, setHistory] = useState([]);
+    const [fxData, setFxData] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const handleAsk = async (customQuery = null) => {
-        const q = customQuery || query;
-        if (!q.trim()) return;
-
+    const fetchData = () => {
         setLoading(true);
-        setResponse(null);
-        // Add to history immediately for better UX
-        const newHistoryItem = { type: 'user', text: q, timestamp: new Date() };
-        setHistory(prev => [newHistoryItem, ...prev]);
-
-        try {
-            const res = await axios.post('http://localhost:8000/ask_ai', {
-                query: q,
-                context: "You are QNews, a financial news aggregator and analyst. Provide real-time, data-driven market news summaries. Be concise, professional, and focus on verifiable financial events."
+        axios.get(apiUrl('/automation/fx_scores'))
+            .then(res => {
+                setFxData(res.data);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Failed to load FX scores", err);
+                setLoading(false);
             });
-
-            if (res.data.answer) {
-                setResponse(res.data.answer);
-                setHistory(prev => [{ type: 'ai', text: res.data.answer, timestamp: new Date() }, ...prev]);
-            } else {
-                setResponse("Error: No response from AI.");
-            }
-        } catch (e) {
-            setResponse("Failed to connect to QNews service.");
-            console.error(e);
-        } finally {
-            setLoading(false);
-            if (!customQuery) setQuery("");
-        }
     };
 
-    const suggestions = [
-        { icon: Globe, label: "Global Market Summary", query: "Summarize the current state of global financial markets today." },
-        { icon: TrendingUp, label: "Crypto Trends", query: "What are the top trending cryptocurrencies and major news in the crypto space today?" },
-        { icon: Newspaper, label: "Earnings Reports", query: "Which major companies are reporting earnings this week and what are the expectations?" },
-        { icon: AlertTriangle, label: "Market Risks", query: "What are the biggest geopolitical or economic risks facing the markets right now?" }
-    ];
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    // Group data by currency
+    const groupedData = fxData.reduce((acc, item) => {
+        const currency = item.currency || "Unknown";
+        if (!acc[currency]) acc[currency] = [];
+        acc[currency].push(item);
+        return acc;
+    }, {});
+
+    // Sort dates within groups
+    Object.keys(groupedData).forEach(curr => {
+        groupedData[curr].sort((a, b) => new Date(a.date) - new Date(b.date));
+    });
+
+    const getScoreColor = (score) => {
+        if (score > 0.5) return "#10b981"; // Green
+        if (score < -0.5) return "#ef4444"; // Red
+        return "#d1d5db"; // Gray
+    };
 
     return (
-        <div className="max-w-7xl mx-auto px-6 py-8 min-h-screen flex flex-col">
-            <header className="mb-10 text-center">
-                <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-500 mb-2 flex items-center justify-center gap-3">
-                    <Sparkles className="w-8 h-8 text-purple-400" />
-                    QNews AI
+        <div className="max-w-7xl mx-auto px-6 py-8 min-h-screen bg-black text-white">
+            <header className="mb-10 text-center relative">
+                <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-2 flex items-center justify-center gap-3">
+                    <Activity className="w-8 h-8 text-green-400" />
+                    Quant News Index
                 </h1>
                 <p className="text-gray-400 max-w-2xl mx-auto">
-                    Real-time financial intelligence powered by advanced AI. Ask about markets, stocks, crypto, or global economic events.
+                    AI-driven Fundamental Scoring Model (-2.0 Bearish to +2.0 Bullish)
                 </p>
+                <button
+                    onClick={fetchData}
+                    className="absolute right-0 top-0 p-2 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors"
+                    title="Refresh Data"
+                >
+                    <RefreshCw className={`w-5 h-5 text-gray-400 ${loading ? 'animate-spin' : ''}`} />
+                </button>
             </header>
 
-            {/* Input Section */}
-            <div className="w-full max-w-3xl mx-auto mb-12">
-                <div className="relative group">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-                    <div className="relative flex bg-[#0A0A0A] border border-gray-800 rounded-xl p-2 shadow-2xl items-center">
-                        <input
-                            type="text"
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleAsk()}
-                            placeholder="Ask QNews about the markets..."
-                            className="flex-1 bg-transparent px-4 py-3 text-lg text-white outline-none placeholder-gray-600"
-                        />
-                        <button
-                            onClick={() => handleAsk()}
-                            disabled={loading || !query.trim()}
-                            className="bg-gray-800 hover:bg-gray-700 text-white p-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-6 h-6 text-blue-400" />}
-                        </button>
-                    </div>
+            {loading && fxData.length === 0 ? (
+                <div className="flex justify-center items-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
                 </div>
-
-                {/* Quick Suggestions */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                    {suggestions.map((s, idx) => (
-                        <button
-                            key={idx}
-                            onClick={() => handleAsk(s.query)}
-                            className="flex flex-col items-center justify-center p-4 bg-[#111] hover:bg-[#1a1a1a] border border-gray-800 hover:border-gray-700 rounded-xl transition-all group"
-                        >
-                            <s.icon className="w-6 h-6 mb-2 text-gray-500 group-hover:text-purple-400 transition-colors" />
-                            <span className="text-xs font-medium text-gray-400 group-hover:text-white text-center">{s.label}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Response Area */}
-            <div className="flex-1 w-full max-w-4xl mx-auto space-y-8">
-                {loading && (
-                    <div className="flex flex-col items-center justify-center py-10 animate-pulse">
-                        <Sparkles className="w-12 h-12 text-purple-500 mb-4 animate-bounce" />
-                        <span className="text-purple-300 font-medium">Analyzing market data...</span>
-                    </div>
-                )}
-
-                <AnimatePresence mode='popLayout'>
-                    {history.map((item, index) => (
-                        <motion.div
-                            key={item.timestamp.toISOString() + index}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className={`flex ${item.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                        >
-                            <div className={`max-w-[85%] rounded-2xl p-6 ${item.type === 'user'
-                                    ? 'bg-gray-800/50 text-gray-200 border border-gray-700'
-                                    : 'bg-gradient-to-br from-[#111] to-[#0d0d0d] border border-purple-900/30 shadow-xl'
-                                }`}>
-                                {item.type === 'ai' && (
-                                    <div className="flex items-center gap-2 mb-4 border-b border-gray-800 pb-2">
-                                        <Sparkles className="w-4 h-4 text-purple-400" />
-                                        <span className="text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 uppercase tracking-wider">QNews Intelligence</span>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {Object.keys(groupedData).length === 0 ? (
+                        <div className="col-span-2 text-center text-gray-500 py-20">
+                            No analysis data available yet. Run the backend script to generate scores.
+                        </div>
+                    ) : (
+                        Object.entries(groupedData).map(([currency, data]) => {
+                            const latestScore = data[data.length - 1]?.score || 0;
+                            return (
+                                <div key={currency} className="bg-[#111] border border-gray-800 rounded-2xl p-6 shadow-xl">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center font-bold text-gray-200">
+                                                {currency.substring(0, 3)}
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-xl text-white">{currency}</h3>
+                                                <span className={`text-sm font-medium ${latestScore > 0 ? 'text-green-400' : latestScore < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                                                    Current Score: {latestScore > 0 ? '+' : ''}{latestScore}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="px-3 py-1 rounded-full bg-gray-800 text-xs text-gray-400 border border-gray-700">
+                                            {data[data.length - 1]?.decision}
+                                        </div>
                                     </div>
-                                )}
 
-                                <div className={`prose prose-invert max-w-none text-sm leading-7 ${item.type === 'user' ? 'font-medium' : 'text-gray-300'}`}>
-                                    {item.text.split('\n').map((line, i) => (
-                                        <p key={i} className="mb-2 last:mb-0">{line}</p>
-                                    ))}
-                                </div>
+                                    <div className="h-[250px] w-full">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <LineChart data={data}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+                                                <XAxis
+                                                    dataKey="date"
+                                                    stroke="#666"
+                                                    tick={{ fill: '#666', fontSize: 12 }}
+                                                    tickLine={false}
+                                                    axisLine={false}
+                                                />
+                                                <YAxis
+                                                    domain={[-2, 2]}
+                                                    ticks={[-2, -1, 0, 1, 2]}
+                                                    stroke="#666"
+                                                    tick={{ fill: '#666', fontSize: 12 }}
+                                                    tickLine={false}
+                                                    axisLine={false}
+                                                />
+                                                <Tooltip
+                                                    contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: '#fff' }}
+                                                    itemStyle={{ color: '#fff' }}
+                                                    formatter={(value) => [value, "Score"]}
+                                                    labelStyle={{ color: '#9ca3af' }}
+                                                />
+                                                <ReferenceLine y={0} stroke="#4b5563" strokeDasharray="3 3" />
+                                                <ReferenceLine y={1.3} stroke="#059669" strokeDasharray="3 3" strokeOpacity={0.3} label={{ value: "Strong Buy", position: 'insideTopRight', fill: '#059669', fontSize: 10 }} />
+                                                <ReferenceLine y={-1.3} stroke="#dc2626" strokeDasharray="3 3" strokeOpacity={0.3} label={{ value: "Strong Sell", position: 'insideBottomRight', fill: '#dc2626', fontSize: 10 }} />
 
-                                <div className="mt-2 text-[10px] text-gray-600 text-right">
-                                    {item.timestamp.toLocaleTimeString()}
+                                                <Line
+                                                    type="monotone"
+                                                    dataKey="score"
+                                                    stroke="#8b5cf6"
+                                                    strokeWidth={3}
+                                                    dot={{ r: 4, fill: "#8b5cf6", strokeWidth: 2, stroke: "#000" }}
+                                                    activeDot={{ r: 6, fill: "#fff" }}
+                                                />
+                                            </LineChart>
+                                        </ResponsiveContainer>
+                                    </div>
+
+                                    <div className="mt-4 pt-4 border-t border-gray-800">
+                                        <p className="text-xs text-gray-500 line-clamp-2">
+                                            {data[data.length - 1]?.summary}
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
-            </div>
+                            );
+                        })
+                    )}
+                </div>
+            )}
         </div>
     );
 };
 
 export default QNews;
+

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 import ResultsTable from '../components/ResultsTable';
 import { X, Loader2, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react';
 import {
@@ -70,7 +71,7 @@ const AssetOverview = ({ asset }) => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const response = await axios.post('http://localhost:8000/analyze_ticker', {
+                const response = await axios.post(apiUrl('/analyze_ticker'), {
                     ticker: asset.ticker
                 });
                 setResults(response.data.results);
@@ -144,7 +145,7 @@ const AssetCotView = ({ asset }) => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const response = await axios.get(`http://localhost:8000/cot/${asset.ticker}`, {
+                const response = await axios.get(apiUrl(`/cot/${asset.ticker}`), {
                     params: { report_type: reportType, lookback: lookback }
                 });
                 setCotData(response.data.data);

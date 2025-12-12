@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 import ResultsTable from '../components/ResultsTable';
 import { Loader2, ArrowLeft, Calendar, TrendingUp, Filter, Settings2, Sparkles, X, MessageSquare, Send } from 'lucide-react';
 import {
@@ -24,7 +25,7 @@ const AssetOverview = ({ ticker }) => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const response = await axios.post('http://localhost:8000/analyze_ticker', {
+                const response = await axios.post(apiUrl('/analyze_ticker'), {
                     ticker: ticker
                 });
                 setResults(response.data.results);
@@ -140,7 +141,7 @@ const AssetCotView = ({ ticker, category }) => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const response = await axios.get(`http://localhost:8000/cot/${ticker}`, {
+                const response = await axios.get(apiUrl(`/cot/${ticker}`), {
                     params: { report_type: reportType, lookback: lookback }
                 });
                 setCotData(response.data.data);
@@ -297,7 +298,7 @@ const AssetPriceChart = ({ ticker }) => {
             setLoading(true);
             setError(null);
             try {
-                const response = await axios.post('http://localhost:8000/ticker_history', { ticker });
+                const response = await axios.post(apiUrl('/ticker_history'), { ticker });
                 const data = response.data.chart_data || [];
                 setAllData(data);
                 filterData(data, range);
@@ -503,7 +504,7 @@ const AssetSeasonalityTable = ({ ticker }) => {
             const startMD = parseMD(startLabel);
             const endMD = parseMD(endLabel);
 
-            const response = await axios.post('http://localhost:8000/evaluate_pattern', {
+            const response = await axios.post(apiUrl('/evaluate_pattern'), {
                 ticker: ticker,
                 start_md: startMD,
                 end_md: endMD,
@@ -531,7 +532,7 @@ const AssetSeasonalityTable = ({ ticker }) => {
     // Fetch Trend (Fast)
     useEffect(() => {
         setLoadingTrend(true);
-        axios.post('http://localhost:8000/ticker_seasonality_trend', {
+        axios.post(apiUrl('/ticker_seasonality_trend'), {
             ticker: ticker,
             lookback_years: lookback,
             filter_mode: filterPostElection ? 'post_election' : null,
@@ -557,7 +558,7 @@ const AssetSeasonalityTable = ({ ticker }) => {
         if (!ticker) return;
 
         setLoadingResults(true);
-        axios.post('http://localhost:8000/analyze_ticker', {
+        axios.post(apiUrl('/analyze_ticker'), {
             ticker: ticker,
             lookback_years: lookback,
             min_win_rate: winRate,

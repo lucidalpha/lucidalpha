@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 import ResultsTable from '../components/ResultsTable';
 import { FileText, Calendar, ChevronRight, ArrowLeft, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,7 +18,7 @@ const Analysis = () => {
 
     const fetchReports = async () => {
         try {
-            const response = await axios.get('http://localhost:8000/reports');
+            const response = await axios.get(apiUrl('/reports'));
             setReports(response.data);
         } catch (error) {
             console.error("Failed to fetch reports", error);
@@ -30,7 +31,7 @@ const Analysis = () => {
         setSelectedReportId(id);
         setFetchingReport(true);
         try {
-            const response = await axios.get(`http://localhost:8000/reports/${id}`);
+            const response = await axios.get(apiUrl(`/reports/${id}`));
             setReportData(response.data);
         } catch (error) {
             console.error("Failed to fetch report details", error);

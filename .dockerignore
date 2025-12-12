@@ -1,0 +1,31 @@
+# Dependencies
+node_modules
+.venv
+__pycache__
+
+# Build output (for frontend)
+dist
+
+# IDE
+.vscode
+.idea
+
+# Git
+.git
+.gitignore
+
+# Environment files (will be mounted separately)
+.env
+.env.*
+
+# Debug files
+*.log
+debug_*.py
+debug_*.txt
+
+# Large data files (will be mounted separately)
+*.csv
+
+# Cache files
+*.pyc
+.pytest_cache
