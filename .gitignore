@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.env
+
+# Javascript / Node
+node_modules/
+dist/
+build/
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/
+
+# Project specific
+uploads/
+reports/
+seasonality_cache.json
+debug_output.txt
+error_log.txt
+*.log
+*.db
