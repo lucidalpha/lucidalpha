@@ -1,0 +1,82 @@
+[
+    {
+        "name": "BERKSHIRE HATHAWAY",
+        "cik": "0001067983"
+    },
+    {
+        "name": "BRIDGEWATER ASSOCIATES",
+        "cik": "0001350694"
+    },
+    {
+        "name": "RENAISSANCE TECHNOLOGIES",
+        "cik": "0001037389"
+    },
+    {
+        "name": "CITADEL ADVISORS",
+        "cik": "0001423053"
+    },
+    {
+        "name": "MILLENNIUM MANAGEMENT",
+        "cik": "0001273087"
+    },
+    {
+        "name": "D. E. SHAW & CO",
+        "cik": "0001009207"
+    },
+    {
+        "name": "TWO SIGMA INVESTMENTS",
+        "cik": "0001179392"
+    },
+    {
+        "name": "BLACKROCK",
+        "cik": "0001364742"
+    },
+    {
+        "name": "VANGUARD GROUP",
+        "cik": "0000102909"
+    },
+    {
+        "name": "TIGER GLOBAL MANAGEMENT",
+        "cik": "0001167483"
+    },
+    {
+        "name": "ARK INVESTMENT MANAGEMENT",
+        "cik": "0001697748"
+    },
+    {
+        "name": "SCION ASSET MANAGEMENT (Burry)",
+        "cik": "0001649339"
+    },
+    {
+        "name": "PERSHING SQUARE (Ackman)",
+        "cik": "0001336528"
+    },
+    {
+        "name": "APPALOOSA (Tepper)",
+        "cik": "0001006438"
+    },
+    {
+        "name": "THIRD POINT (Loeb)",
+        "cik": "0001040273"
+    },
+    {
+        "name": "GREENLIGHT CAPITAL (Einhorn)",
+        "cik": "0001079114"
+    },
+    {
+        "name": "DUQUESNE FAMILY OFFICE (Druckenmiller)",
+        "cik": "0001536411"
+    },
+    {
+        "name": "SOROS FUND MANAGEMENT",
+        "cik": "0001029160"
+    },
+    {
+        "name": "BAKER BROS",
+        "cik": "0001261666"
+    },
+    {
+        "name": "GEODE CAPITAL MANAGEMENT",
+        "cik": "0001266136"
+    }
+]

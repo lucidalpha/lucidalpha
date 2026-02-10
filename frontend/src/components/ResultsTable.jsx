@@ -14,86 +14,83 @@ const formatDate = (dateStr) => {
 const ResultsTable = ({ results, onRowClick }) => {
     if (!results || results.length === 0) {
         return (
-            <div className="text-center text-gray-400 mt-8">
-                Keine signifikanten Muster gefunden.
+            <div className="flex flex-col items-center justify-center p-20 text-center">
+                <p className="text-[10px] tracking-[0.4em] text-neutral-600 uppercase font-medium italic">Keine signifikanten Muster für die gewählten Parameter gefunden.</p>
             </div>
         );
     }
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1 }}
             className="w-full"
         >
-            <div className="bg-black border border-gray-800 rounded-xl overflow-hidden">
-                <div className="p-6 border-b border-gray-800">
-                    <h3 className="text-lg font-semibold text-gray-200">Analyse-Ergebnisse</h3>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-white/5 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-800">
-                                <th className="px-3 py-2.5">Startdatum</th>
-                                <th className="px-3 py-2.5">Enddatum</th>
-                                <th className="px-3 py-2.5">Typ</th>
-                                <th className="px-3 py-2.5">Trefferquote</th>
-                                <th className="px-3 py-2.5">Ø Gewinn</th>
-                                <th className="px-3 py-2.5">Bester Trade</th>
-                                <th className="px-3 py-2.5">Schlechtester Trade</th>
-                                <th className="px-3 py-2.5">Fehltreffer (Jahre)</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-800">
-                            {results.map((pattern, index) => (
-                                <tr
-                                    key={index}
-                                    onClick={() => onRowClick && onRowClick(pattern)}
-                                    className="hover:bg-white/5 transition-colors cursor-pointer group"
-                                >
-                                    <td className="px-3 py-2.5 text-sm font-medium text-gray-300">
-                                        {formatDate(pattern.start_str)}
-                                    </td>
-                                    <td className="px-3 py-2.5 text-sm font-medium text-gray-300">
-                                        {formatDate(pattern.end_str)}
-                                    </td>
-                                    <td className="px-3 py-2.5">
-                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-medium ${pattern.type === 'Long'
-                                            ? 'text-emerald-400'
-                                            : 'text-red-400'
-                                            }`}>
-                                            {pattern.type === 'Long' ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                                            {pattern.type}
-                                        </span>
-                                    </td>
-                                    <td className="px-3 py-2.5">
-                                        <span className={`text-sm font-bold ${pattern.win_rate >= 90 ? 'text-emerald-400' : 'text-white'}`}>
-                                            {pattern.win_rate.toFixed(1)}%
-                                        </span>
-                                    </td>
-                                    <td className="px-3 py-2.5 text-sm">
-                                        <span className={`${pattern.avg_return >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                            {pattern.avg_return ? pattern.avg_return.toFixed(2) + '%' : '-'}
-                                        </span>
-                                    </td>
-                                    <td className="px-3 py-2.5 text-sm text-green-400">
-                                        {pattern.max_return ? '+' + pattern.max_return.toFixed(2) + '%' : '-'}
-                                    </td>
-                                    <td className="px-3 py-2.5 text-sm text-red-400">
-                                        {pattern.min_return ? pattern.min_return.toFixed(2) + '%' : '-'}
-                                    </td>
-                                    <td className="px-3 py-2.5 text-sm text-gray-500">
+            <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                    <thead className="border-b border-white/[0.05]">
+                        <tr className="text-[9px] font-bold text-neutral-600 uppercase tracking-[0.4em]">
+                            <th className="px-2 py-4">Zeitraum</th>
+                            <th className="px-2 py-4">Typ</th>
+                            <th className="px-2 py-4 text-right">Trefferquote</th>
+                            <th className="px-2 py-4 text-right">Ø Ertrag</th>
+                            <th className="px-2 py-4 text-right">Performances</th>
+                            <th className="px-2 py-4">Fehltreffer</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.03]">
+                        {results.map((pattern, index) => (
+                            <tr
+                                key={index}
+                                onClick={() => onRowClick && onRowClick(pattern)}
+                                className="group hover:bg-white/[0.01] transition-all duration-500 cursor-pointer"
+                            >
+                                <td className="px-2 py-6">
+                                    <div className="text-sm font-serif italic text-white group-hover:text-[#d4af37] transition-colors">
+                                        {formatDate(pattern.start_str)} — {formatDate(pattern.end_str)}
+                                    </div>
+                                    <div className="text-[8px] tracking-[0.2em] text-neutral-600 uppercase mt-1.5 font-bold">Historisches Fenster</div>
+                                </td>
+                                <td className="px-2 py-6">
+                                    <span className={`px-4 py-1.5 rounded-sm text-[9px] font-bold tracking-[0.2em] uppercase border transition-all ${pattern.type === 'Long'
+                                        ? 'border-emerald-500/30 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-black'
+                                        : 'border-rose-500/30 text-rose-500 group-hover:bg-rose-500 group-hover:text-black'
+                                        }`}>
+                                        {pattern.type}
+                                    </span>
+                                </td>
+                                <td className="px-2 py-6 text-right">
+                                    <div className={`text-xl font-serif italic ${pattern.win_rate >= 90 ? 'text-[#d4af37]' : 'text-neutral-300'}`}>
+                                        {pattern.win_rate.toFixed(0)}%
+                                    </div>
+                                </td>
+                                <td className="px-2 py-6 text-right">
+                                    <div className={`text-sm font-serif italic ${pattern.avg_return >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                        {pattern.avg_return > 0 ? '+' : ''}{pattern.avg_return.toFixed(2)}%
+                                    </div>
+                                </td>
+                                <td className="px-2 py-6 text-right">
+                                    <div className="flex flex-col items-end gap-0.5">
+                                        <div className="text-[10px] font-mono font-bold text-emerald-500">+{pattern.max_return.toFixed(1)}%</div>
+                                        <div className="text-[10px] font-mono font-bold text-rose-500">{pattern.min_return.toFixed(1)}%</div>
+                                    </div>
+                                </td>
+                                <td className="px-2 py-6">
+                                    <div className="flex flex-wrap gap-1.5 min-w-[100px]">
                                         {pattern.missed_years.length > 0 ? (
-                                            <span className="text-gray-400">{pattern.missed_years.join(', ')}</span>
+                                            pattern.missed_years.map(y => (
+                                                <span key={y} className="text-[8px] font-mono font-bold text-neutral-600 bg-white/[0.03] px-1.5 py-0.5 rounded-sm">{y}</span>
+                                            ))
                                         ) : (
-                                            <span className="text-gray-600 text-xs">Keine</span>
+                                            <span className="text-[8px] tracking-[0.2em] text-neutral-700 uppercase font-bold italic">Makellos</span>
                                         )}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         </motion.div>
     );

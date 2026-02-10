@@ -15,8 +15,8 @@ const Screener = () => {
 
     // Parameters
     const [params, setParams] = useState({
-        startDay: "01.09",
-        endDay: "31.10",
+        startDay: "",
+        endDay: "",
         lookback: 20,
         winRate: 70
     });

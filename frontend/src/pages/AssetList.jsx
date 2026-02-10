@@ -259,64 +259,75 @@ const AssetCotView = ({ asset }) => {
 };
 
 
-// --- Main Component: AssetList (Trading) ---
 const AssetList = () => {
-
     const navigate = useNavigate();
 
     const openAnalysisWindow = (asset, categoryName) => {
-        // Navigate to the analysis page within the same window (SPA behavior)
         navigate(`/analysis-window?ticker=${asset.ticker}&name=${encodeURIComponent(asset.name)}&category=${encodeURIComponent(categoryName)}`);
     };
 
     return (
-        <div className="max-w-7xl mx-auto px-6 py-8">
-            <h1 className="text-3xl font-bold text-white mb-12">Trading</h1>
+        <div className="bg-[#050505] min-h-screen pt-20 pb-32">
+            <div className="max-w-7xl mx-auto px-6 sm:px-10">
+                {/* Header Section */}
+                <div className="flex flex-col items-center mb-24 text-center">
+                    <p className="text-[10px] tracking-[0.5em] text-[#d4af37] uppercase mb-4 font-medium">Asset Universe</p>
+                    <h1 className="text-4xl md:text-6xl font-serif italic text-white mb-8">Markt Auswahl.</h1>
+                    <div className="w-16 h-[1px] bg-white/[0.1] mb-8"></div>
+                    <p className="max-w-xl text-neutral-400 font-light text-sm tracking-wide leading-relaxed">
+                        Entdecken Sie die Vielfalt der globalen Märkte.
+                        Wählen Sie ein Instrument für eine detaillierte saisonale Analyse.
+                    </p>
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                {assetData.map((category) => {
-                    const displayNames = {
-                        'Währungsfutures': 'Währungen',
-                        'Agrarfutures': 'Agrar',
-                        'Commodity Futures': 'Commodities',
-                        'Indices Futures': 'Equity'
-                    };
-                    const title = displayNames[category.category] || category.category.replace(' Futures', '');
+                {/* Grid of Categories */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+                    {assetData.map((category) => {
+                        const displayNames = {
+                            'Währungsfutures': 'Devisen',
+                            'Agrarfutures': 'Agrar',
+                            'Commodity Futures': 'Rohstoffe',
+                            'Indices Futures': 'Indizes'
+                        };
+                        const title = displayNames[category.category] || category.category.replace(' Futures', '');
 
-                    return (
-                        <div key={category.category} className="flex flex-col gap-4">
-                            <div className="border-b border-gray-800 pb-2 mb-2">
-                                <h2 className="text-lg font-semibold text-blue-400 text-center uppercase tracking-wider">{title}</h2>
-                            </div>
-                            <div className="space-y-3">
-                                {category.items.map((item) => {
-                                    return (
+                        return (
+                            <div key={category.category} className="flex flex-col space-y-8 animate-fade-in">
+                                <div className="relative pb-4">
+                                    <h2 className="text-xl font-serif italic text-white tracking-wide">{title}</h2>
+                                    <div className="absolute bottom-0 left-0 w-8 h-[1px] bg-[#d4af37]/50"></div>
+                                </div>
+                                <div className="flex flex-col space-y-3">
+                                    {category.items.map((item, idx) => (
                                         <motion.div
                                             key={item.ticker}
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ duration: 0.2 }}
-                                            className="bg-zinc-900/30 border border-gray-800/50 hover:border-blue-500/30 hover:bg-zinc-800/60 rounded-lg cursor-pointer group transition-all duration-300"
+                                            initial={{ opacity: 0, x: -10 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: idx * 0.05 }}
                                             onClick={() => openAnalysisWindow(item, category.category)}
+                                            className="group cursor-pointer"
                                         >
-                                            <div className="p-3">
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <span className="text-sm font-medium text-gray-200 group-hover:text-white transition-colors">{item.name}</span>
-                                                </div>
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] text-gray-500 font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5">{item.ticker}</span>
-                                                    <ArrowRight className="w-3 h-3 text-gray-600 group-hover:text-blue-400 transition-colors opacity-0 group-hover:opacity-100" />
+                                            <div className="relative p-5 rounded-2xl border border-white/[0.05] bg-white/[0.02] hover:bg-white/[0.05] hover:border-[#d4af37]/30 transition-all duration-700 overflow-hidden">
+                                                {/* Hover line */}
+                                                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#d4af37]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+
+                                                <div className="flex justify-between items-start">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[13px] font-light text-neutral-200 group-hover:text-white transition-colors duration-500 tracking-wide mb-2 line-clamp-1">{item.name}</span>
+                                                        <span className="text-[9px] font-medium tracking-[0.2em] text-[#d4af37]/60 group-hover:text-[#d4af37] transition-colors duration-500 uppercase">{item.ticker}</span>
+                                                    </div>
+                                                    <div className="w-8 h-8 rounded-full border border-white/[0.05] flex items-center justify-center text-neutral-500 group-hover:border-[#d4af37]/30 group-hover:text-[#d4af37] transition-all duration-700">
+                                                        <ArrowRight size={12} strokeWidth={1.5} className="group-hover:translate-x-0.5 transition-transform" />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </motion.div>
-                                    );
-                                })}
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );

@@ -1,0 +1,16 @@
+[
+    {
+        "id": "market_open",
+        "name": "Market Opening Brief",
+        "query": "Summarize the pre-market sentiment for US Indices (SPX, NDX) and major commodities (Gold, Oil) for today. check for major overnight news.",
+        "schedule_time": "09:00",
+        "active": true
+    },
+    {
+        "id": "crypto_update",
+        "name": "Crypto Daily",
+        "query": "What are the top 3 trending cryptocurrencies today and why? Give a brief market sentiment overview for Bitcoin and Ethereum.",
+        "schedule_time": "10:00",
+        "active": true
+    }
+]

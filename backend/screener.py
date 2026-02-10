@@ -122,10 +122,116 @@ def fetch_dax():
         print(f"Error fetching DAX: {e}")
         return []
 
+
+def fetch_currencies_usd():
+    return [
+        {"ticker": "DX=F", "name": "US Dollar Index"},
+        {"ticker": "EURUSD=X", "name": "EUR/USD"},
+        {"ticker": "GBPUSD=X", "name": "GBP/USD"},
+        {"ticker": "USDJPY=X", "name": "USD/JPY"},
+        {"ticker": "USDCAD=X", "name": "USD/CAD"},
+        {"ticker": "USDCHF=X", "name": "USD/CHF"},
+        {"ticker": "AUDUSD=X", "name": "AUD/USD"},
+        {"ticker": "NZDUSD=X", "name": "NZD/USD"}
+    ]
+
+def fetch_currencies_eur():
+    return [
+        {"ticker": "6E=F", "name": "Euro Future"},
+        {"ticker": "EURUSD=X", "name": "EUR/USD"},
+        {"ticker": "EURGBP=X", "name": "EUR/GBP"},
+        {"ticker": "EURJPY=X", "name": "EUR/JPY"},
+        {"ticker": "EURCHF=X", "name": "EUR/CHF"},
+        {"ticker": "EURAUD=X", "name": "EUR/AUD"},
+        {"ticker": "EURCAD=X", "name": "EUR/CAD"},
+        {"ticker": "EURNZD=X", "name": "EUR/NZD"}
+    ]
+
+def fetch_currencies_gbp():
+    return [
+        {"ticker": "6B=F", "name": "British Pound Future"},
+        {"ticker": "GBPUSD=X", "name": "GBP/USD"},
+        {"ticker": "EURGBP=X", "name": "EUR/GBP"},
+        {"ticker": "GBPJPY=X", "name": "GBP/JPY"},
+        {"ticker": "GBPCHF=X", "name": "GBP/CHF"},
+        {"ticker": "GBPAUD=X", "name": "GBP/AUD"},
+        {"ticker": "GBPCAD=X", "name": "GBP/CAD"},
+        {"ticker": "GBPNZD=X", "name": "GBP/NZD"}
+    ]
+
+def fetch_currencies_jpy():
+    return [
+        {"ticker": "6J=F", "name": "Japanese Yen Future"},
+        {"ticker": "USDJPY=X", "name": "USD/JPY"},
+        {"ticker": "EURJPY=X", "name": "EUR/JPY"},
+        {"ticker": "GBPJPY=X", "name": "GBP/JPY"},
+        {"ticker": "AUDJPY=X", "name": "AUD/JPY"},
+        {"ticker": "NZDJPY=X", "name": "NZD/JPY"},
+        {"ticker": "CADJPY=X", "name": "CAD/JPY"},
+        {"ticker": "CHFJPY=X", "name": "CHF/JPY"}
+    ]
+
+def fetch_currencies_aud():
+    return [
+        {"ticker": "6A=F", "name": "Australian Dollar Future"},
+        {"ticker": "AUDUSD=X", "name": "AUD/USD"},
+        {"ticker": "EURAUD=X", "name": "EUR/AUD"},
+        {"ticker": "GBPAUD=X", "name": "GBP/AUD"},
+        {"ticker": "AUDJPY=X", "name": "AUD/JPY"},
+        {"ticker": "AUDNZD=X", "name": "AUD/NZD"},
+        {"ticker": "AUDCAD=X", "name": "AUD/CAD"},
+        {"ticker": "AUDCHF=X", "name": "AUD/CHF"}
+    ]
+
+def fetch_currencies_nzd():
+    return [
+        {"ticker": "6N=F", "name": "New Zealand Dollar Future"},
+        {"ticker": "NZDUSD=X", "name": "NZD/USD"},
+        {"ticker": "EURNZD=X", "name": "EUR/NZD"},
+        {"ticker": "GBPNZD=X", "name": "GBP/NZD"},
+        {"ticker": "AUDNZD=X", "name": "AUD/NZD"},
+        {"ticker": "NZDJPY=X", "name": "NZD/JPY"},
+        {"ticker": "NZDCAD=X", "name": "NZD/CAD"},
+        {"ticker": "NZDCHF=X", "name": "NZD/CHF"}
+    ]
+
+def fetch_currencies_cad():
+    return [
+        {"ticker": "6C=F", "name": "Canadian Dollar Future"},
+        {"ticker": "USDCAD=X", "name": "USD/CAD"},
+        {"ticker": "EURCAD=X", "name": "EUR/CAD"},
+        {"ticker": "GBPCAD=X", "name": "GBP/CAD"},
+        {"ticker": "AUDCAD=X", "name": "AUD/CAD"},
+        {"ticker": "NZDCAD=X", "name": "NZD/CAD"},
+        {"ticker": "CADJPY=X", "name": "CAD/JPY"},
+        {"ticker": "CADCHF=X", "name": "CAD/CHF"}
+    ]
+
+def fetch_currencies_chf():
+    return [
+        {"ticker": "6S=F", "name": "Swiss Franc Future"},
+        {"ticker": "USDCHF=X", "name": "USD/CHF"},
+        {"ticker": "EURCHF=X", "name": "EUR/CHF"},
+        {"ticker": "GBPCHF=X", "name": "GBP/CHF"},
+        {"ticker": "AUDCHF=X", "name": "AUD/CHF"},
+        {"ticker": "NZDCHF=X", "name": "NZD/CHF"},
+        {"ticker": "CADCHF=X", "name": "CAD/CHF"},
+        {"ticker": "CHFJPY=X", "name": "CHF/JPY"}
+    ]
+
 INDEX_FETCHERS = {
     "dow": fetch_dow_jones,
     "nasdaq": fetch_nasdaq_100,
-    "dax": fetch_dax
+    "dax": fetch_dax,
+    "currencies": fetch_currencies_usd, # Default fallback if needed, or remove generic
+    "curr_usd": fetch_currencies_usd,
+    "curr_eur": fetch_currencies_eur,
+    "curr_gbp": fetch_currencies_gbp,
+    "curr_jpy": fetch_currencies_jpy,
+    "curr_aud": fetch_currencies_aud,
+    "curr_nzd": fetch_currencies_nzd,
+    "curr_cad": fetch_currencies_cad,
+    "curr_chf": fetch_currencies_chf
 }
 
 

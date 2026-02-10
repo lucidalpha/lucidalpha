@@ -44,185 +44,14 @@ app.add_middleware(
 def read_root():
     return {"message": "Seasonality Analysis API is running"}
 
-@app.post("/upload")
-async def upload_file(
-    file: UploadFile = File(...), 
-    benchmarks: str = Form(None)
-):
-    try:
-        file_location = f"{UPLOAD_DIR}/{file.filename}"
-        with open(file_location, "wb+") as file_object:
-            shutil.copyfileobj(file.file, file_object)
-        
-        # Run analysis (Skipped per user request for Valuation upload)
-        # from analysis import analyze_seasonality, calculate_valuation_from_df, prepare_data
-        # results = analyze_seasonality(file_location)
-        from analysis import calculate_valuation_from_df, prepare_data, load_valuation_df
-        results = []
-        
-        # Valuation
-        valuation_list = []
-        valuation_columns = []
-        
-        # Valuation Logic
-        import pandas as pd
-        from datetime import datetime
-        
-        # Always try to read the file for potential "Symbol" columns or for benchmarks prep
-        try:
-            df_val = load_valuation_df(file_location)
-        except Exception as e:
-            print(f"Valuation Data Prep Warning: {e}")
-            df_val = pd.DataFrame()
 
-        valuation_data = {}
-        
-        # 1. Check for Pre-calculated "Symbol X" columns in the uploaded file
-        # The user says they will upload a file formatted with "Symbol" columns for valuation
-        symbol_cols = [c for c in df_val.columns if str(c).startswith("Symbol")]
-        
-        if symbol_cols:
-            # Use these columns directly
-            for idx, col in enumerate(symbol_cols):
-                 key = f"val_{idx}"
-                 # Use the column name as is, or "Symbol X"
-                 valuation_columns.append({"key": key, "label": col})
-                 
-                # Fill data
-                 for _, row in df_val.iterrows():
-                     if pd.notna(row[col]):
-                         # Use 'Date' column, not index
-                         date_val = row.get('Date')
-                         if pd.notna(date_val) and hasattr(date_val, 'strftime'):
-                             try:
-                                 d_str = date_val.strftime('%d.%m.%Y')
-                             except ValueError:
-                                 continue
-                             
-                             if d_str not in valuation_data:
-                                 valuation_data[d_str] = {"date": d_str}
-                             
-                             # Convert to float/round
-                             try:
-                                 val = float(row[col])
-                                 valuation_data[d_str][key] = round(val, 2)
-                             except:
-                                 pass
-        
-        # 2. If no Symbol columns found, fall back to "Benchmarks" logic (if selected)
-        elif benchmarks and not df_val.empty:
-            ticker_map = {
-                "dollar": ("DX=F", "Dollar Index"),
-                "euro": ("6E=F", "Euro Future"),
-                "zb": ("ZB=F", "Interest Rates (ZB1!)"),
-                "gold": ("GC=F", "Gold")
-            }
-            
-            selected = benchmarks.split(',')
-            for idx, sel in enumerate(selected):
-                sel = sel.strip().lower()
-                if sel in ticker_map:
-                    comp_ticker, label = ticker_map[sel]
-                    key = f"val_{idx}"
-                    valuation_columns.append({"key": key, "label": label})
-                    
-                    period = 13 if comp_ticker == "ZB=F" else 10
-                    data = calculate_valuation_from_df(df_val, comp_ticker, period=period)
-                    
-                    for entry in data:
-                        d = entry['date']
-                        val = entry['value']
-                        if d not in valuation_data:
-                            valuation_data[d] = {"date": d}
-                        valuation_data[d][key] = val
-                        
-        valuation_list = list(valuation_data.values())
-        if valuation_list:
-            valuation_list.sort(key=lambda x: datetime.strptime(x['date'], '%d.%m.%Y'), reverse=False)
+# --- REMOVED VALUATION/REPORTS ---
 
-        # Generate Report ID and Timestamp
-        timestamp = int(time.time())
-        report_id = f"{file.filename}_{timestamp}"
-        report_path = f"{REPORTS_DIR}/{report_id}.json"
-
-        report_data = {
-            "id": report_id,
-            "filename": file.filename,
-            "timestamp": timestamp,
-            "results": results,
-            "valuation": valuation_list,
-            "valuation_columns": valuation_columns
-        }
-        
-        with open(report_path, "w") as f:
-            json.dump(report_data, f)
-        
-        # Stats Logic
-        from statistics_calc import calculate_statistics
-        from datetime import datetime
-        
-        # We need date objects for proper sorting in stats calc
-        # valuation_list currently has 'date' as string "dd.mm.yyyy"
-        # Let's augment it temp
-        for item in valuation_list:
-            item['date_obj'] = datetime.strptime(item['date'], '%d.%m.%Y')
-        
-        stats = calculate_statistics(valuation_list, valuation_columns)
-        
-        # Cleanup temp objects before sending to JSON
-        for item in valuation_list:
-            del item['date_obj']
-
-        return {
-            "filename": file.filename,
-            "status": "success",
-            "message": "Analyse erfolgreich abgeschlossen.",
-            "results": results,
-            "valuation": valuation_list,
-            "valuation_columns": valuation_columns,
-            "statistics": stats,
-            "report_id": report_id
-        }
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/reports")
-def list_reports():
-    reports = []
-    files = glob.glob(f"{REPORTS_DIR}/*.json")
-    for f in files:
-        try:
-            with open(f, "r") as file_obj:
-                data = json.load(file_obj)
-                reports.append({
-                    "id": data.get("id"),
-                    "filename": data.get("filename"),
-                    "timestamp": data.get("timestamp"),
-                    "result_count": len(data.get("results", []))
-                })
-        except:
-            continue
-    reports.sort(key=lambda x: x["timestamp"], reverse=True)
-    return reports
-
-@app.get("/reports/{report_id}")
-def get_report(report_id: str):
-    file_path = f"{REPORTS_DIR}/{report_id}.json"
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="Report not found")
-    try:
-        with open(file_path, "r") as f:
-            data = json.load(f)
-        return data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 # Cache Global
 ANALYSIS_CACHE_FILE = "seasonality_cache.json"
 CACHE_DURATION = 2592000  # 30 days
+RESULT_CACHE = {}
 
 
 ALL_ASSETS = [
@@ -286,6 +115,16 @@ def analyze_ticker_endpoint(request: TickerRequest):
         from analysis import analyze_seasonality, fetch_ticker_data, calculate_seasonal_trend
         import pandas as pd
         
+
+        # Cache Key Generation
+        req_key = f"{request.ticker}_{request.lookback_years}_{request.min_win_rate}_{request.filter_mode}_{request.filter_odd_years}_{request.exclude_2020}_{request.filter_election}_{request.filter_midterm}_{request.filter_pre_election}_{request.filter_post_election}"
+        
+        # Check Cache
+        global RESULT_CACHE
+        if req_key in RESULT_CACHE:
+             print(f"DEBUG: Cache Hit for {req_key}")
+             return RESULT_CACHE[req_key]
+
         df = fetch_ticker_data(request.ticker)
         if df is None or df.empty:
              # Try yfinance fallback inside fetch_ticker_data usually handles it, but if None:
@@ -328,11 +167,16 @@ def analyze_ticker_endpoint(request: TickerRequest):
                      "close": r['Close']
                  })
 
-        return {
+        result_payload = {
             "results": patterns,
             "seasonal_trend": seasonal_trend,
             "chart_data": chart_data
         }
+        
+        # Save to Cache
+        RESULT_CACHE[req_key] = result_payload
+        
+        return result_payload
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -430,116 +274,9 @@ def evaluate_pattern_endpoint(request: CustomPatternRequest):
         print(f"Eval Pattern Error: {e}")
         return {"status": "error", "message": str(e)}
 
-@app.get("/analyze_all_assets")
-def analyze_all_assets_endpoint(
-    lookback_years: Optional[int] = 15,
-    min_win_rate: Optional[int] = 70,
-    search_start_date: Optional[str] = None,
-    search_end_date: Optional[str] = None,
-    filter_odd_years: Optional[bool] = False,
-    exclude_2020: Optional[bool] = False,
-    filter_election: Optional[bool] = False,
-    filter_midterm: Optional[bool] = False,
-    filter_pre_election: Optional[bool] = False,
-    filter_post_election: Optional[bool] = False
-):
-    import time
-    import yfinance as yf
-    from analysis import analyze_seasonality, fetch_ticker_data
-    import pandas as pd
-    import json
-    import os
-    
-    current_time = time.time()
-    
-    # Check if we are using default params (for cache usage)
-    # Cache assumes lookback=15, win=70, no filters, no custom dates
-    # If ANY param deviates, bypass cache
-    is_default_params = (
-        lookback_years == 15 and 
-        min_win_rate == 70 and 
-        not search_start_date and 
-        not search_end_date and
-        not any([filter_odd_years, exclude_2020, filter_election, filter_midterm, filter_pre_election, filter_post_election])
-    )
 
-    # 1. Check File Cache (Only if ALL params are default)
-    if is_default_params and os.path.exists(ANALYSIS_CACHE_FILE):
-        try:
-            with open(ANALYSIS_CACHE_FILE, "r") as f:
-                cached = json.load(f)
-                if current_time - cached.get("timestamp", 0) < CACHE_DURATION:
-                    print("Returning cached analysis data (from disk).")
-                    return cached.get("data", [])
-        except Exception as e:
-            print(f"Cache read error: {e}")
-    
-    all_patterns = []
-    tickers = [a["ticker"] for a in ALL_ASSETS]
-    
-    print(f"Starting analysis for {len(tickers)} assets... Params: Lookback={lookback_years}, Win={min_win_rate}, Dates={search_start_date}-{search_end_date}")
+# --- REMOVED ANALYZE ALL ASSETS ---
 
-    def process_asset(asset_info):
-        ticker = asset_info['ticker']
-        name = asset_info['name']
-        try:
-            # Use our robust fetch_ticker_data
-            df = fetch_ticker_data(ticker)
-            
-            if df is None or df.empty:
-                return []
-                
-            if 'Date' not in df.columns:
-                df = df.reset_index()
-                
-            pats = analyze_seasonality(
-                df, 
-                lookback_years=lookback_years, 
-                min_win_rate=min_win_rate,
-                search_start_date=search_start_date,
-                search_end_date=search_end_date,
-                filter_odd_years=filter_odd_years,
-                exclude_2020=exclude_2020,
-                filter_election=filter_election,
-                filter_midterm=filter_midterm,
-                filter_pre_election=filter_pre_election,
-                filter_post_election=filter_post_election
-            )
-            
-            for p in pats:
-                p['asset_name'] = name
-                p['ticker'] = ticker
-            
-            return pats
-        except Exception as e:
-            print(f"Error analyzing {ticker}: {e}")
-            return []
-
-    # Parallel Execution
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-        future_to_asset = {executor.submit(process_asset, asset): asset for asset in ALL_ASSETS}
-        for future in concurrent.futures.as_completed(future_to_asset):
-            try:
-                patterns = future.result()
-                all_patterns.extend(patterns)
-            except Exception as e:
-                print(f"Thread error: {e}")
-
-    all_patterns.sort(key=lambda x: x['win_rate'], reverse=True)
-    
-    # Update Cache
-    if all_patterns:
-        try:
-            with open(ANALYSIS_CACHE_FILE, "w") as f:
-                json.dump({
-                    "data": all_patterns,
-                    "timestamp": current_time
-                }, f)
-            print(f"Analysis success. {len(all_patterns)} patterns found and cached.")
-        except Exception as e:
-             print(f"Cache write error: {e}")
-    
-    return all_patterns
 
 @app.get("/cot/{ticker}")
 def get_cot_report(ticker: str, report_type: str = "legacy", lookback: int = 26):
@@ -552,6 +289,114 @@ def get_cot_report(ticker: str, report_type: str = "legacy", lookback: int = 26)
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/institutional/funds")
+def get_all_funds_endpoint():
+    try:
+        from institutional_service import get_all_funds_summary
+        return get_all_funds_summary()
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/institutional/fund_holdings/{cik}")
+def get_fund_holdings_endpoint(cik: str):
+    try:
+        from institutional_service import get_fund_holdings
+        return get_fund_holdings(cik)
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/institutional/{ticker}")
+def get_institutional_data_endpoint(ticker: str):
+    try:
+        from analysis import get_institutional_data
+        data = get_institutional_data(ticker)
+        if not data:
+             return {"holders": [], "breakdown": {"insiders":0, "institutions":0, "public":100}}
+        return data
+    except Exception as e:
+        print(f"Inst Data Error: {e}")
+        return {"holders": [], "breakdown": {"insiders":0, "institutions":0, "public":100}}
+
+# --- NEW SMART MONEY ENDPOINTS ---
+@app.get("/institutional/smart_money_flow/{ticker}")
+def get_smart_money_flow_endpoint(ticker: str):
+    try:
+        from institutional_service import get_smart_money_flow
+        return get_smart_money_flow(ticker)
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/institutional/avg_price/{ticker}")
+def get_avg_price_endpoint(ticker: str):
+    try:
+        from institutional_service import get_avg_entry_price_estimation
+        return get_avg_entry_price_estimation(ticker)
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/institutional/whale_watch/{ticker}")
+def get_whale_watch_endpoint(ticker: str):
+    try:
+        from institutional_service import get_whale_watch_data
+        return get_whale_watch_data(ticker)
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/institutional/global_stats")
+def get_global_stats_endpoint():
+    try:
+        from institutional_service import get_global_whale_stats
+        return get_global_whale_stats()
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/institutional/largest_moves/{ticker}")
+def get_largest_moves_endpoint(ticker: str):
+    try:
+        from institutional_service import get_largest_moves
+        return get_largest_moves(ticker)
+    except Exception as e:
+        return {"error": str(e)}
+
+
+
+
+@app.get("/insider/{ticker}")
+def get_insider_trades_endpoint(ticker: str):
+    try:
+        from analysis import get_insider_trades_sec
+        data = get_insider_trades_sec(ticker)
+        return {"trades": data}
+    except Exception as e:
+        print(f"Insider Data Error: {e}")
+        return {"trades": []}
+
+@app.get("/company_profile/{ticker}")
+def get_company_profile_endpoint(ticker: str):
+    try:
+        from analysis import get_company_profile
+        data = get_company_profile(ticker)
+        return data if data else {"error": "No data"}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/ticker_news/{ticker}")
+def get_ticker_news_endpoint(ticker: str):
+    try:
+        from analysis import get_ticker_news
+        news = get_ticker_news(ticker)
+        return news
+    except Exception as e:
+        return []
+
+@app.get("/company_financials/{ticker}")
+def get_company_financials_endpoint(ticker: str):
+    try:
+        from analysis import get_company_financials
+        data = get_company_financials(ticker)
+        return data if data else {"error": "No data"}
+    except Exception as e:
+        return {"error": str(e)}
 
 # Load Stock DB
 STOCK_DB = []
@@ -639,87 +484,8 @@ def search_ticker(q: str):
         print(f"Search error: {e}")
         return {"results": []}
 
-# --- AUTOMATION / QNEWS ---
-@app.on_event("startup")
-def startup_event():
-    from automation import start_scheduler
-    start_scheduler()
-    
-    # Auto-Run Fallback: Check if daily analysis ran today
-    import subprocess
-    import threading
-    from datetime import datetime
-    
-    def run_analysis_if_needed():
-        json_path = "daily_fx_scores.json"
-        today_str = datetime.now().strftime("%Y-%m-%d")
-        
-        should_run = False
-        if not os.path.exists(json_path):
-            should_run = True
-        else:
-            try:
-                with open(json_path, "r") as f:
-                    data = json.load(f)
-                    # Check if ANY entry has today's date
-                    if not any(item.get('date') == today_str for item in data):
-                        should_run = True
-            except:
-                should_run = True
-                
-        if should_run:
-            print("🚀 Auto-Startup: Daily Analysis missing for today. Running in background...")
-            # Run the script as a separate process to avoid blocking
-            try:
-                subprocess.Popen(["python", "daily_news_index.py"], cwd=os.path.dirname(__file__))
-            except Exception as e:
-                print(f"Failed to auto-start analysis: {e}")
-        else:
-            print("✅ Daily Analysis for today already exists.")
 
-    # Run check in thread to not delay startup
-    threading.Thread(target=run_analysis_if_needed).start()
-
-
-@app.get("/automation/tasks")
-def get_tasks_endpoint():
-    from automation import load_tasks
-    return load_tasks()
-
-@app.post("/automation/run/{task_id}")
-def run_task_endpoint(task_id: str, background_tasks: BackgroundTasks):
-    from automation import execute_task_now
-    # Run in background to not block
-    background_tasks.add_task(execute_task_now, task_id)
-    return {"status": "started", "message": f"Task {task_id} queued"}
-
-@app.get("/automation/briefings")
-def get_briefings_endpoint():
-    from automation import get_briefings
-    return get_briefings()
-
-class AIRequest(BaseModel):
-    query: str
-    context: Optional[str] = None
-
-
-@app.post("/ask_ai")
-def ask_ai_endpoint(req: AIRequest):
-    from ai_service import ask_perplexity
-    return ask_perplexity(req.query, req.context)
-
-@app.get("/automation/fx_scores")
-def get_fx_scores():
-    file_path = "daily_fx_scores.json"
-    if os.path.exists(file_path):
-        try:
-            with open(file_path, "r") as f:
-                return json.load(f)
-        except:
-            return []
-    return []
-
-
+# --- REMOVED AUTOMATION / QNEWS / HMM ---
 
 
 class TickerHistoryRequest(BaseModel):
@@ -808,6 +574,52 @@ def run_screener(request: ScreenerRequest):
     if index_name not in INDEX_FETCHERS:
         raise HTTPException(status_code=400, detail="Invalid index provided.")
         
+
+        
+    try:
+        # Calculate min_year
+        import datetime
+        current_year = datetime.datetime.now().year
+        # If lookback is provided
+        lookback = request.lookback_years if request.lookback_years else 20
+        min_year = current_year - lookback
+        
+
+        result_data = screen_index(
+            index_name, 
+            min_win_rate=request.min_win_rate,
+            min_year=min_year,
+            search_start_date=request.search_start_date,
+            search_end_date=request.search_end_date,
+            filter_mode=request.filter_mode,
+            filter_odd_years=request.filter_odd_years,
+            exclude_2020=request.exclude_2020,
+            filter_election=request.filter_election,
+            filter_midterm=request.filter_midterm,
+            filter_pre_election=request.filter_pre_election,
+            filter_post_election=request.filter_post_election
+        )
+        
+        # Check if result_data is a dict (new format) or list (old format fallback)
+        if isinstance(result_data, dict):
+            # Pass through the rich metadata
+            return {
+                "status": "success" if not result_data.get("error") else "error",
+                "index": index_name,
+                "data": result_data # Nested: results, tickers_found, scanned_count, etc.
+            }
+        else:
+            # Fallback legacy
+            return {"status": "success", "index": index_name, "results": result_data, "count": len(result_data)}
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ... (existing code)
+
+
 class CycleRequest(BaseModel):
     ticker: str
     anchor_date: Optional[str] = None
@@ -876,49 +688,6 @@ def cycle_scan_endpoint(request: CycleRequest):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-        
-    try:
-        # Calculate min_year
-        import datetime
-        current_year = datetime.datetime.now().year
-        # If lookback is provided
-        lookback = request.lookback_years if request.lookback_years else 20
-        min_year = current_year - lookback
-        
-
-        result_data = screen_index(
-            index_name, 
-            min_win_rate=request.min_win_rate,
-            min_year=min_year,
-            search_start_date=request.search_start_date,
-            search_end_date=request.search_end_date,
-            filter_mode=request.filter_mode,
-            filter_odd_years=request.filter_odd_years,
-            exclude_2020=request.exclude_2020,
-            filter_election=request.filter_election,
-            filter_midterm=request.filter_midterm,
-            filter_pre_election=request.filter_pre_election,
-            filter_post_election=request.filter_post_election
-        )
-        
-        # Check if result_data is a dict (new format) or list (old format fallback)
-        if isinstance(result_data, dict):
-            # Pass through the rich metadata
-            return {
-                "status": "success" if not result_data.get("error") else "error",
-                "index": index_name,
-                "data": result_data # Nested: results, tickers_found, scanned_count, etc.
-            }
-        else:
-            # Fallback legacy
-            return {"status": "success", "index": index_name, "results": result_data, "count": len(result_data)}
-            
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
-
-# ... (existing code)
 
 # Calculator Endpoints
 class RiskAnalysisRequest(BaseModel):
@@ -974,22 +743,48 @@ def monte_carlo_endpoint(request: MonteCarloRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-class CycleAnalysisRequest(BaseModel):
-    ticker: str
-    period: Optional[str] = "5y"
 
-@app.post("/cycles/analyze")
-def analyze_cycles_endpoint(request: CycleAnalysisRequest):
-    try:
-        from analysis import fetch_ticker_data
-        from cycle_analysis import perform_cycle_analysis
+# Valid endpoints related to Stocks (Aktien), Calculators, and Term Structure remain below.
+
+# --- REMOVED ENDPOINTS (Valuation, Trading, Cycles, Regimes, QNews) ---
+
+
+# Term Structure Endpoints
+@app.get("/term_structure/assets")
+def get_term_structure_assets():
+    from futures_config import FUTURES_METADATA
+    
+    # Get set of valid tickers from Trading List
+    # Note: ALL_ASSETS defined globally above
+    trading_tickers = set(a['ticker'] for a in ALL_ASSETS)
+    
+    assets = []
+    for k, v in FUTURES_METADATA.items():
+        # Only include if in trading list
+        if k in trading_tickers:
+            assets.append({
+                "ticker": k,
+                "name": v['name'],
+                "root": v['root'],
+                "structure": v.get('structure', 'Unbekannt')
+            })
+    
+    # Sort by root to group nicely
+    assets.sort(key=lambda x: x['root'])
         
-        df = fetch_ticker_data(request.ticker, period=request.period)
-        if df is None or df.empty:
-            raise HTTPException(status_code=404, detail="Ticker data not found")
-            
-        results = perform_cycle_analysis(df)
-        return results
+    return assets
+
+class TermStructureRequest(BaseModel):
+    ticker: str
+
+@app.post("/term_structure/analyze")
+def analyze_term_structure_endpoint(request: TermStructureRequest):
+    try:
+        from term_structure import get_term_structure
+        data = get_term_structure(request.ticker)
+        if "error" in data:
+             raise HTTPException(status_code=400, detail=data['error'])
+        return data
     except Exception as e:
         import traceback
         traceback.print_exc()

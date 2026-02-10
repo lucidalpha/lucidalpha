@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BarChart2, Activity } from 'lucide-react';
+import { BarChart2, Activity, DollarSign } from 'lucide-react';
 
 const HubCard = ({ title, description, icon: Icon, to, image }) => {
     return (
@@ -69,6 +69,20 @@ const SeasonalityHub = () => {
                         description="Futures, Rohstoffe und Währungen. Finde statistische Vorteile in kurz- bis mittelfristigen Zeitfenstern."
                         icon={Activity}
                         to="/seasonality/trading"
+                    />
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="md:col-span-2"
+                >
+                    <HubCard
+                        title="Währungsanalyse"
+                        description="Spezialisierter Scanner für FX-Futures und Währungspaare."
+                        icon={DollarSign}
+                        to="/seasonality/currency"
                     />
                 </motion.div>
             </div>

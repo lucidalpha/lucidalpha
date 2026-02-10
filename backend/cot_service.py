@@ -34,12 +34,26 @@ CACHE_TFF = "cftc_tff_v2.csv"
 CACHE_DISAGG = "cftc_disagg_v1.csv"
 CACHE_EXPIRY = 3600 * 24
 
+CACHE_LEGACY_DF = None
+CACHE_TFF_DF = None
+CACHE_DISAGG_DF = None
+CACHE_LAST_LOAD = {}
+
 def fetch_legacy_data():
+    global CACHE_LEGACY_DF
+    
+    # Check In-Memory Cache first
+    if CACHE_LEGACY_DF is not None:
+         # Optional: Check expiry? For now assume memory is fresh for the session lifetime or until restart
+         return CACHE_LEGACY_DF
+
     if os.path.exists(CACHE_LEGACY):
         mtime = os.path.getmtime(CACHE_LEGACY)
         if datetime.datetime.now().timestamp() - mtime < CACHE_EXPIRY:
              try:
-                 return pd.read_csv(CACHE_LEGACY, dtype={'cftc_code': str}, parse_dates=['date'], low_memory=False)
+                 df = pd.read_csv(CACHE_LEGACY, dtype={'cftc_code': str}, parse_dates=['date'], low_memory=False)
+                 CACHE_LEGACY_DF = df
+                 return df
              except: pass
 
     print("Downloading CoT Legacy Data...")
@@ -92,15 +106,25 @@ def fetch_legacy_data():
     final = pd.concat(dfs, ignore_index=True)
     final['date'] = pd.to_datetime(final['date'], errors='coerce')
     final['cftc_code'] = final['cftc_code'].astype(str).str.strip()
+    
+    # Remove duplicates
+    final = final.drop_duplicates(subset=['date', 'cftc_code'], keep='last')
+
     final.to_csv(CACHE_LEGACY, index=False)
     return final
 
 def fetch_tff_data():
+    global CACHE_TFF_DF
+    if CACHE_TFF_DF is not None:
+        return CACHE_TFF_DF
+
     if os.path.exists(CACHE_TFF):
         mtime = os.path.getmtime(CACHE_TFF)
         if datetime.datetime.now().timestamp() - mtime < CACHE_EXPIRY:
              try:
-                 return pd.read_csv(CACHE_TFF, dtype={'cftc_code': str}, parse_dates=['date'], low_memory=False)
+                 df = pd.read_csv(CACHE_TFF, dtype={'cftc_code': str}, parse_dates=['date'], low_memory=False)
+                 CACHE_TFF_DF = df
+                 return df
              except: pass
 
     print("Downloading CoT TFF Data...")
@@ -175,15 +199,24 @@ def fetch_tff_data():
     final['date'] = pd.to_datetime(final['date'], errors='coerce')
     final['cftc_code'] = final['cftc_code'].astype(str).str.strip()
     
+    # Remove duplicates (e.g. overlap between Current and History 2025)
+    final = final.drop_duplicates(subset=['date', 'cftc_code'], keep='last')
+    
     final.to_csv(CACHE_TFF, index=False)
     return final
 
 def fetch_disagg_data():
+    global CACHE_DISAGG_DF
+    if CACHE_DISAGG_DF is not None:
+        return CACHE_DISAGG_DF
+
     if os.path.exists(CACHE_DISAGG):
         mtime = os.path.getmtime(CACHE_DISAGG)
         if datetime.datetime.now().timestamp() - mtime < CACHE_EXPIRY:
              try:
-                 return pd.read_csv(CACHE_DISAGG, dtype={'cftc_code': str}, parse_dates=['date'], low_memory=False)
+                 df = pd.read_csv(CACHE_DISAGG, dtype={'cftc_code': str}, parse_dates=['date'], low_memory=False)
+                 CACHE_DISAGG_DF = df
+                 return df
              except: pass
 
     print("Downloading CoT Disaggregated Data...")
@@ -260,6 +293,9 @@ def fetch_disagg_data():
     final = pd.concat(dfs, ignore_index=True)
     final['date'] = pd.to_datetime(final['date'], errors='coerce')
     final['cftc_code'] = final['cftc_code'].astype(str).str.strip()
+    
+    # Remove duplicates
+    final = final.drop_duplicates(subset=['date', 'cftc_code'], keep='last')
     
     final.to_csv(CACHE_DISAGG, index=False)
     return final

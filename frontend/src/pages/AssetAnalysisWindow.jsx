@@ -1,97 +1,16 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { apiUrl } from '../config/api';
-import ResultsTable from '../components/ResultsTable';
-import { Loader2, ArrowLeft, Calendar, TrendingUp, Filter, Settings2, Sparkles, X, MessageSquare, Send } from 'lucide-react';
+
+import { Loader2, ArrowLeft, TrendingUp, ChevronDown, ChevronUp, Briefcase, Users, Globe, ExternalLink } from 'lucide-react';
+
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    Legend, ReferenceLine, AreaChart, Area, ReferenceArea
+    Legend, ReferenceLine, AreaChart, Area, ReferenceArea, PieChart, Pie, Cell
 } from 'recharts';
-import SeasonalChart from '../components/SeasonalChart';
 
-// Reuse the AssetOverview and AssetCotView components logic, 
-// or import them if we refactor AssetList to export them.
-// For simplicity and independence, I will inline the necessary logic here adapted for a full page view.
-
-// --- Sub-Component: Overview (Price & Seasonality) ---
-const AssetOverview = ({ ticker }) => {
-    const [results, setResults] = useState(null);
-    const [chartData, setChartData] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                const response = await axios.post(apiUrl('/analyze_ticker'), {
-                    ticker: ticker
-                });
-                setResults(response.data.results);
-                setChartData(response.data.chart_data || []);
-            } catch (err) {
-                console.error(err);
-                setError(`Failed to fetch analysis data.`);
-            } finally {
-                setLoading(false);
-            }
-        };
-        if (ticker) fetchData();
-    }, [ticker]);
-
-    if (loading) return <div className="p-8 text-center text-gray-500"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />Loading Overview...</div>;
-    if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
-
-    // Simplified Structure for combined view
-    return (
-        <div className="flex flex-col gap-8 h-full">
-            {/* Price Chart - Full Width */}
-            <div className="w-full flex flex-col min-h-[500px]">
-                <h3 className="text-lg font-semibold text-white mb-2">Price History (Daily)</h3>
-                <div className="flex-1 border border-gray-800 rounded-xl bg-black/50 p-4">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                            <XAxis dataKey="date" stroke="#666" tick={{ fill: '#666', fontSize: 12 }} minTickGap={50} tickFormatter={(val) => new Date(val).toLocaleDateString()} />
-                            <YAxis stroke="#666" tick={{ fill: '#666', fontSize: 12 }} domain={['auto', 'auto']} />
-                            <Tooltip contentStyle={{ backgroundColor: '#000', borderColor: '#333' }} />
-                            <Line type="monotone" dataKey="close" stroke="#fff" dot={false} strokeWidth={2} isAnimationActive={false} />
-                        </LineChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
-
-            <div className="flex flex-row gap-8 w-full h-[600px]">
-                {/* Seasonality Table - Left Half */}
-                <div className="flex-1 flex flex-col">
-                    <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-lg font-semibold text-white">Seasonality Patterns</h3>
-                    </div>
-                    <div className="flex-1 overflow-auto border border-gray-800 rounded-xl bg-black/50">
-                        <ResultsTable results={results || []} />
-                    </div>
-                </div>
-
-                {/* CoT Report - Right Half Placeholder is handled by parent grid/flex usually, but here we inject CoTView via prop or render separate */}
-                {/* Note: The user wants CoT NEXT to Seasonality. So AssetOverview needs to change effectively or we restructure the parent to hold them side by side.
-                     Actually, better to have AssetAnalysisWindow manage the layout and these components just return specific blocks. 
-                     Refactoring detailed below.
-                  */}
-            </div>
-        </div>
-    );
-};
-
-// Refactoring AssetOverview to JUST return the data/logic hooks or minimal UI components? 
-// No, let's keep it simple. The user wants Price Chart Top, then split row: Seasonality | CoT.
-// I will modify AssetOverview to ONLY render the price chart and seasonality, but wait, the prompt asks to put CoT NEXT to Seasonality.
-// So:
-// Row 1: Price Chart (Full Width)
-// Row 2: Seasonality (Left) | CoT (Right)
-
-
-// --- Constants (duplicated for robustness for now) ---
+// --- Constants ---
 const ASSET_CATEGORIES = {
     "Währungsfutures": ["DX=F", "6C=F", "6A=F", "6E=F", "6B=F", "6S=F", "6N=F", "6J=F"],
     "Agrarfutures": ["CC=F", "ZS=F", "SB=F", "KC=F", "ZW=F", "ZC=F"],
@@ -107,7 +26,7 @@ const getCategoryByTicker = (ticker) => {
 };
 
 // --- Sub-Component: CoT View ---
-const AssetCotView = ({ ticker, category }) => {
+const AssetCotView = ({ ticker, category, onSignalsChange }) => {
     const [cotData, setCotData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -122,6 +41,15 @@ const AssetCotView = ({ ticker, category }) => {
     const [showLine1, setShowLine1] = useState(true);
     const [showLine2, setShowLine2] = useState(true);
     const [showLine3, setShowLine3] = useState(true);
+
+    // Zoom State (100 = 100% = Normal view)
+    const [zoomLevel, setZoomLevel] = useState(100);
+
+    // --- Backtest Signal State ---
+    const [signalParticipant, setSignalParticipant] = useState('commercials');
+    const [signalOver80, setSignalOver80] = useState(false);
+    const [signalUnder20, setSignalUnder20] = useState(false);
+    const [signalShowZones, setSignalShowZones] = useState(false);
 
     // Explicitly define assets that support TFF and Disagg
     const TFF_SUPPORTED_TICKERS = [
@@ -139,6 +67,7 @@ const AssetCotView = ({ ticker, category }) => {
 
     useEffect(() => {
         const fetchData = async () => {
+            // ... existing fetch logic
             setLoading(true);
             try {
                 const response = await axios.get(apiUrl(`/cot/${ticker}`), {
@@ -169,7 +98,7 @@ const AssetCotView = ({ ticker, category }) => {
 
     const filteredData = getFilteredData();
 
-    // Labels
+    // Labels & Keys Helper
     const getLabels = () => {
         if (reportType === 'tff') {
             return {
@@ -193,100 +122,305 @@ const AssetCotView = ({ ticker, category }) => {
     };
     const labels = getLabels();
 
+    // --- Signal Calculation Logic ---
+    useEffect(() => {
+        if (!cotData || cotData.length === 0 || !onSignalsChange) return;
+
+        // Only calculate signals if at least one checkbox is active
+        if (!signalOver80 && !signalUnder20) {
+            onSignalsChange([]);
+            return;
+        }
+
+        // Determine which field to track
+        let indexKey = '';
+        if (reportType === 'legacy') {
+            if (signalParticipant === 'commercials') indexKey = 'commercial_index';
+            if (signalParticipant === 'large_spec') indexKey = 'large_spec_index';
+            if (signalParticipant === 'small_spec') indexKey = 'small_spec_index';
+        } else if (reportType === 'tff') {
+            if (signalParticipant === 'commercials') indexKey = 'dealer_index';
+            if (signalParticipant === 'large_spec') indexKey = 'asset_index';
+            if (signalParticipant === 'small_spec') indexKey = 'lev_index';
+        } else if (reportType === 'disaggregated') {
+            if (signalParticipant === 'commercials') indexKey = 'pm_index';
+            if (signalParticipant === 'large_spec') indexKey = 'mm_index';
+            if (signalParticipant === 'small_spec') indexKey = 'swap_index';
+        }
+
+        if (!indexKey) return;
+
+        const signals = [];
+        let inZoneHigh = false;
+        let startHigh = null;
+        let inZoneLow = false;
+        let startLow = null;
+
+        const sorted = [...cotData].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        sorted.forEach((d, idx) => {
+            const val = d[indexKey];
+            if (val === undefined || val === null) return;
+
+            // Check > 80
+            if (signalOver80) {
+                if (val > 80) {
+                    if (!inZoneHigh) {
+                        inZoneHigh = true;
+                        startHigh = d.date;
+                        if (!signalShowZones) {
+                            signals.push({ type: 'line', date: d.date, color: '#22c55e', label: '>80' });
+                        }
+                    }
+                } else {
+                    if (inZoneHigh) {
+                        inZoneHigh = false;
+                        if (signalShowZones && startHigh) {
+                            signals.push({ type: 'zone', startDate: startHigh, endDate: d.date, color: '#22c55e' });
+                        }
+                        startHigh = null;
+                    }
+                }
+            }
+
+            // Check < 20
+            if (signalUnder20) {
+                if (val < 20) {
+                    if (!inZoneLow) {
+                        inZoneLow = true;
+                        startLow = d.date;
+                        if (!signalShowZones) {
+                            signals.push({ type: 'line', date: d.date, color: '#ef4444', label: '<20' });
+                        }
+                    }
+                } else {
+                    if (inZoneLow) {
+                        inZoneLow = false;
+                        if (signalShowZones && startLow) {
+                            signals.push({ type: 'zone', startDate: startLow, endDate: d.date, color: '#ef4444' });
+                        }
+                        startLow = null;
+                    }
+                }
+            }
+        });
+
+        // Close any open zones at the end
+        if (signalShowZones) {
+            const lastDate = sorted[sorted.length - 1].date;
+            if (inZoneHigh && startHigh) {
+                signals.push({ type: 'zone', startDate: startHigh, endDate: lastDate, color: '#22c55e' });
+            }
+            if (inZoneLow && startLow) {
+                signals.push({ type: 'zone', startDate: startLow, endDate: lastDate, color: '#ef4444' });
+            }
+        }
+
+        onSignalsChange(signals);
+
+    }, [cotData, signalParticipant, signalOver80, signalUnder20, signalShowZones, reportType, onSignalsChange]);
+
+    // --- Domain Calculation Logic ---
+    const getChartDomain = () => {
+        if (viewMode === 'index') {
+            // Base: 0 to 100
+            // Zoom > 100 -> Zoom In (e.g. 25-75)
+            // Zoom < 100 -> Zoom Out (e.g. -50 to 150)
+            const center = 50;
+            const fullSpan = 100;
+
+            // Factor: 100 -> 1.0, 200 -> 0.5 (shows half range), 50 -> 2.0 (shows double range)
+            const factor = 100 / zoomLevel;
+            const currentSpan = fullSpan * factor;
+
+            return [center - currentSpan / 2, center + currentSpan / 2];
+        } else {
+            // Net view: 'auto' is tricky to zoom manually without knowing min/max.
+            // Let's rely on Recharts 'dataMin' / 'dataMax' if zoom is 100.
+            // If zoom != 100, we need absolute numbers.
+            if (zoomLevel === 100) return ['auto', 'auto'];
+
+            // Calculate min/max from data to pivot around
+            if (!filteredData || filteredData.length === 0) return ['auto', 'auto'];
+
+            const keys = [
+                showLine1 ? labels.key1_net : null,
+                showLine2 ? labels.key2_net : null,
+                showLine3 ? labels.key3_net : null
+            ].filter(Boolean);
+
+            let min = Infinity;
+            let max = -Infinity;
+
+            filteredData.forEach(d => {
+                keys.forEach(k => {
+                    const val = d[k];
+                    if (val !== undefined && val !== null) {
+                        if (val < min) min = val;
+                        if (val > max) max = val;
+                    }
+                });
+            });
+
+            if (min === Infinity || max === -Infinity) return ['auto', 'auto'];
+
+            const center = (max + min) / 2;
+            const fullSpan = max - min || 1000; // fallback span
+
+            const factor = 100 / zoomLevel;
+            const currentSpan = fullSpan * factor;
+
+            return [center - currentSpan / 2, center + currentSpan / 2];
+        }
+    };
+
     if (loading) return <div className="p-8 text-center text-gray-500"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />Loading CoT Data...</div>;
     if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
 
+    const currentDomain = getChartDomain();
+
     return (
-        <div className="flex flex-col gap-6 w-full">
-            {/* Controls */}
-            <div className="flex flex-wrap gap-4 items-center justify-between bg-zinc-900/50 p-4 rounded-xl border border-white/5">
-                <div className="flex gap-2">
-                    <div className="flex bg-black rounded-lg p-1 border border-gray-800">
-                        <button onClick={() => setReportType('legacy')} className={`px-3 py-1 text-xs rounded transition-colors ${reportType === 'legacy' ? 'bg-gray-700 text-white' : 'text-gray-400'}`}>Legacy</button>
-                        {supportsTff && (
-                            <button onClick={() => setReportType('tff')} className={`px-3 py-1 text-xs rounded transition-colors ${reportType === 'tff' ? 'bg-gray-700 text-white' : 'text-gray-400'}`}>TFF</button>
-                        )}
-                        {supportsDisagg && (
-                            <button onClick={() => setReportType('disaggregated')} className={`px-3 py-1 text-xs rounded transition-colors ${reportType === 'disaggregated' ? 'bg-gray-700 text-white' : 'text-gray-400'}`}>Disagg</button>
-                        )}
-                    </div>
-                    <div className="flex bg-black rounded-lg p-1 border border-gray-800">
-                        <button onClick={() => setViewMode('index')} className={`px-3 py-1 text-xs rounded transition-colors ${viewMode === 'index' ? 'bg-blue-600 text-white' : 'text-gray-400'}`}>Index</button>
-                        <button onClick={() => setViewMode('net')} className={`px-3 py-1 text-xs rounded transition-colors ${viewMode === 'net' ? 'bg-blue-600 text-white' : 'text-gray-400'}`}>Net</button>
+        <div className="flex flex-col gap-10 w-full animate-fade-in">
+            {/* Header / Config Row */}
+            <div className="flex flex-col gap-8">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="text-xl font-serif italic text-white mb-2">Commitment of Traders</h2>
+                        <p className="text-[9px] tracking-[0.4em] text-neutral-600 uppercase font-bold">Smart Money Positionierung</p>
                     </div>
                 </div>
 
-                <div className="flex gap-4 items-center">
-                    <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer">
-                        <input type="checkbox" checked={showLine1} onChange={e => setShowLine1(e.target.checked)} className="rounded border-gray-700 bg-gray-800 text-blue-500" />
-                        <span style={{ color: '#3b82f6' }}>{labels.line1}</span>
-                    </label>
-                    <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer">
-                        <input type="checkbox" checked={showLine2} onChange={e => setShowLine2(e.target.checked)} className="rounded border-gray-700 bg-gray-800 text-green-500" />
-                        <span style={{ color: '#22c55e' }}>{labels.line2}</span>
-                    </label>
-                    <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer">
-                        <input type="checkbox" checked={showLine3} onChange={e => setShowLine3(e.target.checked)} className="rounded border-gray-700 bg-gray-800 text-red-500" />
-                        <span style={{ color: '#ef4444' }}>{labels.line3}</span>
-                    </label>
+                <div className="flex flex-wrap items-center justify-between gap-10 py-8 border-y border-white/[0.03]">
+                    <div className="flex flex-wrap gap-8 items-center">
+                        <div className="flex bg-white/[0.03] rounded-sm p-0.5 border border-white/[0.05]">
+                            {['legacy', 'tff', 'disaggregated'].map(type => (
+                                (type === 'legacy' || (type === 'tff' && supportsTff) || (type === 'disaggregated' && supportsDisagg)) && (
+                                    <button
+                                        key={type}
+                                        onClick={() => setReportType(type)}
+                                        className={`px-4 py-1.5 text-[9px] font-bold tracking-[0.2em] uppercase rounded-sm transition-all duration-700 ${reportType === type ? 'bg-white text-black' : 'text-neutral-600 hover:text-white'}`}
+                                    >
+                                        {type === 'disaggregated' ? 'Disagg' : type}
+                                    </button>
+                                )
+                            ))}
+                        </div>
+                        <div className="flex bg-white/[0.03] rounded-sm p-0.5 border border-white/[0.05]">
+                            {['index', 'net'].map(mode => (
+                                <button
+                                    key={mode}
+                                    onClick={() => setViewMode(mode)}
+                                    className={`px-4 py-1.5 text-[9px] font-bold tracking-[0.2em] uppercase rounded-sm transition-all duration-700 ${viewMode === mode ? 'bg-[#d4af37] text-black' : 'text-neutral-600 hover:text-white'}`}
+                                >
+                                    {mode}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-8">
+                        <div className="flex bg-white/[0.03] rounded-sm p-0.5 border border-white/[0.05]">
+                            {['1Y', '3Y', '5Y', 'All'].map(r => (
+                                <button key={r} onClick={() => setRange(r)} className={`px-4 py-1.5 text-[9px] font-bold tracking-[0.2em] uppercase rounded-sm transition-all duration-700 ${range === r ? 'bg-white/10 text-white' : 'text-neutral-600 hover:text-white'}`}>{r}</button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
-                <div className="flex bg-black rounded-lg p-1 border border-gray-800">
-                    <button onClick={() => setLookback(26)} className={`px-3 py-1 text-xs rounded transition-colors ${lookback === 26 ? 'bg-indigo-600 text-white' : 'text-gray-400'}`}>6 M</button>
-                    <button onClick={() => setLookback(156)} className={`px-3 py-1 text-xs rounded transition-colors ${lookback === 156 ? 'bg-indigo-600 text-white' : 'text-gray-400'}`}>3 J</button>
-                </div>
+                {/* Legend & Zoom Combined */}
+                <div className="flex flex-wrap items-center justify-between gap-6 pb-4">
+                    <div className="flex flex-wrap gap-6">
+                        {[
+                            { id: 1, state: showLine1, set: setShowLine1, color: '#3b82f6', label: labels.line1 },
+                            { id: 2, state: showLine2, set: setShowLine2, color: '#22c55e', label: labels.line2 },
+                            { id: 3, state: showLine3, set: setShowLine3, color: '#ef4444', label: labels.line3 }
+                        ].map(line => (
+                            <label key={line.id} className="flex items-center gap-2.5 cursor-pointer group">
+                                <div className="relative">
+                                    <input type="checkbox" checked={line.state} onChange={e => line.set(e.target.checked)} className="peer w-3.5 h-3.5 opacity-0 absolute z-10 cursor-pointer" />
+                                    <div className={`w-3 h-3 rounded-sm border transition-all duration-500 ${line.state ? 'border-white/40' : 'border-white/10 group-hover:border-white/30'}`}>
+                                        {line.state && <div className="absolute inset-0 flex items-center justify-center"><div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: line.color }} /></div>}
+                                    </div>
+                                </div>
+                                <span className={`text-[9px] uppercase tracking-[0.2em] font-extrabold transition-colors ${line.state ? 'text-white' : 'text-neutral-600'}`}>{line.label}</span>
+                            </label>
+                        ))}
+                    </div>
 
-                <div className="flex bg-black rounded-lg p-1 border border-gray-800">
-                    {['All', '10Y', '5Y', '3Y', '1Y'].map(r => (
-                        <button key={r} onClick={() => setRange(r)} className={`px-2 py-1 text-xs rounded transition-colors ${range === r ? 'text-white bg-gray-700' : 'text-gray-500 hover:text-gray-300'}`}>{r}</button>
-                    ))}
+                    <div className="flex items-center gap-4 min-w-[150px]">
+                        <span className="text-[8px] text-[#d4af37] font-extrabold uppercase tracking-[0.4em]">Zoom</span>
+                        <input
+                            type="range" min="50" max="300" value={zoomLevel}
+                            onChange={e => setZoomLevel(Number(e.target.value))}
+                            className="flex-1 h-[1px] bg-white/10 appearance-none cursor-pointer hover:bg-white/20 transition-colors [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-[#d4af37] [&::-webkit-slider-thumb]:rounded-full"
+                        />
+                        <span className="text-[9px] font-mono text-neutral-600 w-8">{zoomLevel}%</span>
+                    </div>
                 </div>
             </div>
 
-            {/* Main Chart */}
-            <div className="h-[500px] bg-black border border-gray-800 rounded-xl p-4">
-                <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={filteredData}>
+            {/* Main Chart Section */}
+            <div className="relative h-[400px]">
+                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-500/10 to-transparent"></div>
+                <div className="h-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={filteredData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.02)" vertical={false} />
+                            <XAxis dataKey="date" stroke="rgba(255,255,255,0.2)" tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }} minTickGap={50} axisLine={false} tickLine={false} tickFormatter={(val) => new Date(val).toLocaleDateString()} />
+                            <YAxis
+                                stroke="rgba(255,255,255,0.2)"
+                                tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }}
+                                domain={currentDomain}
+                                allowDataOverflow={true}
+                                axisLine={false}
+                                tickLine={false}
+                            />
+                            <Tooltip contentStyle={{ backgroundColor: '#0c0c0c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '1rem', color: '#fff' }} labelFormatter={(l) => new Date(l).toLocaleDateString()} />
 
-                        <XAxis dataKey="date" stroke="#666" tick={{ fill: '#666', fontSize: 12 }} minTickGap={50} tickFormatter={(val) => new Date(val).toLocaleDateString()} />
-                        <YAxis stroke="#666" tick={{ fill: '#666', fontSize: 12 }} domain={['auto', 'auto']} />
-                        <Tooltip contentStyle={{ backgroundColor: '#000', borderColor: '#333' }} labelFormatter={(l) => new Date(l).toLocaleDateString()} />
-                        <Legend />
+                            {viewMode === 'index' && (
+                                <>
+                                    <ReferenceArea y1={80} y2={100} fill="#22c55e" fillOpacity={0.05} stroke="none" />
+                                    <ReferenceLine y={80} stroke="#22c55e" strokeDasharray="5 5" strokeOpacity={0.3} />
+                                    <ReferenceArea y1={0} y2={20} fill="#ef4444" fillOpacity={0.05} stroke="none" />
+                                    <ReferenceLine y={20} stroke="#ef4444" strokeDasharray="5 5" strokeOpacity={0.3} />
+                                </>
+                            )}
 
-                        {viewMode === 'index' && (
-                            <>
-                                <ReferenceArea y1={80} y2={120} fill="rgba(34, 197, 94, 0.1)" stroke="none" />
-                                <ReferenceArea y1={-20} y2={20} fill="rgba(239, 68, 68, 0.1)" stroke="none" />
-                                <ReferenceLine y={100} stroke="#444" strokeDasharray="3 3" />
-                                <ReferenceLine y={0} stroke="#444" strokeDasharray="3 3" />
-                            </>
-                        )}
-
-                        {showLine1 && <Line type="monotone" dataKey={viewMode === 'index' ? labels.key1_idx : labels.key1_net} name={labels.line1} stroke="#3b82f6" dot={false} strokeWidth={2} connectNulls isAnimationActive={false} />}
-                        {showLine2 && <Line type="monotone" dataKey={viewMode === 'index' ? labels.key2_idx : labels.key2_net} name={labels.line2} stroke="#22c55e" dot={false} strokeWidth={2} connectNulls isAnimationActive={false} />}
-                        {showLine3 && <Line type="monotone" dataKey={viewMode === 'index' ? labels.key3_idx : labels.key3_net} name={labels.line3} stroke="#ef4444" dot={false} strokeWidth={2} connectNulls isAnimationActive={false} />}
-                    </LineChart>
-                </ResponsiveContainer>
+                            {showLine1 && <Line type="monotone" dataKey={viewMode === 'index' ? labels.key1_idx : labels.key1_net} name={labels.line1} stroke="#3b82f6" dot={false} strokeWidth={1} connectNulls isAnimationActive={false} />}
+                            {showLine2 && <Line type="monotone" dataKey={viewMode === 'index' ? labels.key2_idx : labels.key2_net} name={labels.line2} stroke="#22c55e" dot={false} strokeWidth={1} connectNulls isAnimationActive={false} />}
+                            {showLine3 && <Line type="monotone" dataKey={viewMode === 'index' ? labels.key3_idx : labels.key3_net} name={labels.line3} stroke="#ef4444" dot={false} strokeWidth={1} connectNulls isAnimationActive={false} />}
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
             </div>
 
-            {/* Open Interest Chart */}
-            <div className="h-[150px] bg-black border border-gray-800 rounded-xl p-4">
-                <p className="text-xs text-gray-500 mb-2">Open Interest</p>
-                <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={filteredData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                        <XAxis dataKey="date" hide />
-                        <YAxis stroke="#666" tick={{ fill: '#666', fontSize: 10 }} />
-                        <Tooltip contentStyle={{ backgroundColor: '#000', borderColor: '#333' }} />
-                        <Area type="monotone" dataKey="open_interest" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.1} />
-                    </AreaChart>
-                </ResponsiveContainer>
+            {/* Open Interest Section */}
+            <div className="relative pb-8 border-b border-white/[0.03]">
+                <div className="flex items-center gap-4 mb-4">
+                    <span className="text-[8px] tracking-[0.4em] font-extrabold text-neutral-600 uppercase">Open Interest</span>
+                </div>
+                <div className="h-[150px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={filteredData}>
+                            <XAxis dataKey="date" hide />
+                            <YAxis hide domain={['auto', 'auto']} />
+                            <Tooltip contentStyle={{ backgroundColor: '#0c0c0c', border: 'none', borderRadius: '1rem' }} />
+                            <Area type="monotone" dataKey="open_interest" stroke="#d4af37" fill="url(#colorOI)" strokeWidth={1} fillOpacity={1} />
+                            <defs>
+                                <linearGradient id="colorOI" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#d4af37" stopOpacity={0.1} />
+                                    <stop offset="95%" stopColor="#d4af37" stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
+                        </AreaChart>
+                    </ResponsiveContainer>
+                </div>
             </div>
         </div>
     );
 };
 
-const AssetPriceChart = ({ ticker }) => {
+const AssetPriceChart = ({ ticker, cotSignals }) => {
     const [allData, setAllData] = useState([]);
     const [chartData, setChartData] = useState([]);
     const [range, setRange] = useState('All');
@@ -335,21 +469,43 @@ const AssetPriceChart = ({ ticker }) => {
         setChartData(filtered);
     };
 
+    // Memoize the data processing to prevent unnecessary calcs
+    const processedData = React.useMemo(() => {
+        if (!chartData) return [];
+        return chartData.map(d => ({
+            ...d,
+            dateNum: new Date(d.date).getTime()
+        }));
+    }, [chartData]);
+
+    const processedSignals = React.useMemo(() => {
+        if (!cotSignals) return [];
+        return cotSignals.map(s => {
+            const base = { ...s };
+            if (s.date) base.dateNum = new Date(s.date).getTime();
+            if (s.startDate) base.startNum = new Date(s.startDate).getTime();
+            if (s.endDate) base.endNum = new Date(s.endDate).getTime();
+            return base;
+        });
+    }, [cotSignals]);
+
     if (loading) return <div className="h-full flex items-center justify-center text-gray-500"><Loader2 className="animate-spin mr-2" /> Loading Chart...</div>;
     if (error) return <div className="h-full flex items-center justify-center text-red-500">Error: {error}</div>;
-    // Fix: Logical precedence in condition
     if ((!chartData || chartData.length === 0) && (!allData || allData.length === 0)) return <div className="h-full flex items-center justify-center text-gray-500">No price data available for {ticker}</div>;
 
     return (
         <div className="flex flex-col h-full gap-4">
             <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white">Price History (Daily)</h3>
-                <div className="flex bg-black rounded-lg p-1 border border-gray-800">
+                <div>
+                    <h3 className="text-xl font-serif italic text-white mb-1">Kursentwicklung</h3>
+                    <p className="text-[9px] tracking-[0.4em] font-bold text-neutral-600 uppercase">Markthistorie</p>
+                </div>
+                <div className="flex bg-white/[0.03] rounded-sm p-0.5 border border-white/[0.05]">
                     {['1Y', '3Y', '5Y', 'All'].map(r => (
                         <button
                             key={r}
                             onClick={() => setRange(r)}
-                            className={`px-3 py-1 text-xs rounded transition-colors ${range === r ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}
+                            className={`px-4 py-1 text-[9px] font-bold tracking-[0.2em] rounded-sm transition-all duration-700 ${range === r ? 'bg-white text-black' : 'text-neutral-600 hover:text-white'}`}
                         >
                             {r}
                         </button>
@@ -357,16 +513,743 @@ const AssetPriceChart = ({ ticker }) => {
                 </div>
             </div>
 
-            <div className="h-[500px] border border-gray-800 rounded-xl bg-black/50 p-4 relative">
-                <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                        <XAxis dataKey="date" stroke="#666" tick={{ fill: '#666', fontSize: 12 }} minTickGap={50} tickFormatter={(val) => new Date(val).toLocaleDateString()} />
-                        <YAxis stroke="#666" tick={{ fill: '#666', fontSize: 12 }} domain={['auto', 'auto']} tickFormatter={(val) => val.toFixed(4)} />
-                        <Tooltip contentStyle={{ backgroundColor: '#000', borderColor: '#333' }} labelFormatter={(label) => new Date(label).toLocaleDateString()} formatter={(value) => [value, 'Price']} />
-                        <Line type="monotone" dataKey="close" stroke="#fff" dot={false} strokeWidth={2} isAnimationActive={false} />
-                    </LineChart>
-                </ResponsiveContainer>
+            <div className="relative h-[450px]">
+                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/[0.03] to-transparent"></div>
+                <div className="h-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={processedData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                            <XAxis
+                                dataKey="dateNum"
+                                type="number"
+                                domain={['dataMin', 'dataMax']}
+                                stroke="rgba(255,255,255,0.2)"
+                                tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }}
+                                minTickGap={50}
+                                axisLine={false}
+                                tickLine={false}
+                                tickFormatter={(val) => new Date(val).toLocaleDateString()}
+                            />
+                            <YAxis
+                                stroke="rgba(255,255,255,0.2)"
+                                tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }}
+                                domain={['auto', 'auto']}
+                                axisLine={false}
+                                tickLine={false}
+                                tickFormatter={(val) => val.toFixed(2)}
+                            />
+                            <Tooltip
+                                contentStyle={{ backgroundColor: '#0c0c0c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '1rem', color: '#fff' }}
+                                labelStyle={{ color: '#d4af37', fontFamily: 'serif', fontStyle: 'italic' }}
+                                labelFormatter={(label) => new Date(label).toLocaleDateString()}
+                                formatter={(value) => [value.toLocaleString(), 'Kurs']}
+                            />
+
+                            {/* CoT Signals */}
+                            {processedSignals && processedSignals.map((sig, idx) => {
+                                if (sig.type === 'zone') {
+                                    return (
+                                        <ReferenceArea
+                                            key={idx}
+                                            x1={sig.startNum}
+                                            x2={sig.endNum}
+                                            fill={sig.color}
+                                            fillOpacity={0.1}
+                                            stroke="none"
+                                        />
+                                    );
+                                } else {
+                                    return (
+                                        <ReferenceLine
+                                            key={idx}
+                                            x={sig.dateNum}
+                                            stroke={sig.color}
+                                            strokeWidth={1}
+                                            strokeOpacity={0.5}
+                                            label={{ value: sig.label, fill: sig.color, fontSize: 8, position: 'insideTopLeft' }}
+                                        />
+                                    );
+                                }
+                            })}
+
+                            <Line type="monotone" dataKey="close" stroke="#d4af37" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- Sub-Component: Stock Institutional View (Live Dashboard) ---
+// Compact Helper Table
+// --- Sub-Component: Company Profile View ---
+// --- Translations & Helpers ---
+const translateSector = (s) => {
+    const map = {
+        "Technology": "Technologie",
+        "Consumer Electronics": "Unterhaltungselektronik",
+        "Financial Services": "Finanzdienstleistungen",
+        "Healthcare": "Gesundheitswesen",
+        "Energy": "Energie",
+        "Industrials": "Industrie",
+        "Utilities": "Versorger",
+        "Basic Materials": "Grundstoffe",
+        "Communication Services": "Kommunikation",
+        "Consumer Cyclical": "Zyklische Konsumgüter",
+        "Consumer Defensive": "Basiskonsumgüter",
+        "Real Estate": "Immobilien"
+    };
+    return map[s] || s;
+};
+
+// --- Sub-Component: TradingView Widget ---
+const TradingViewWidget = ({ symbol }) => {
+    const container = useRef();
+
+    useEffect(() => {
+        if (!container.current) return;
+
+        // Clear previous script
+        container.current.innerHTML = '';
+
+        const script = document.createElement("script");
+        script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+        script.type = "text/javascript";
+        script.async = true;
+        script.innerHTML = JSON.stringify({
+            "autosize": true,
+            "symbol": symbol,
+            "interval": "D",
+            "timezone": "Europe/Berlin",
+            "theme": "dark",
+            "style": "1",
+            "locale": "de_DE",
+            "enable_publishing": false,
+            "hide_top_toolbar": false,
+            "allow_symbol_change": true,
+            "save_image": false,
+            "calendar": false,
+            "hide_side_toolbar": false,
+            "support_host": "https://www.tradingview.com",
+            "backgroundColor": "rgba(0, 0, 0, 1)"
+        });
+        container.current.appendChild(script);
+    }, [symbol]);
+
+    return (
+        <div className="tradingview-widget-container" ref={container} style={{ height: "100%", width: "100%" }}>
+            <div className="tradingview-widget-container__widget" style={{ height: "100%", width: "100%" }}></div>
+        </div>
+    );
+};
+
+// --- Sub-Component: Company Profile View ---
+const CompanyProfileView = ({ ticker }) => {
+    const [profile, setProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            setLoading(true);
+            try {
+                const res = await axios.get(apiUrl(`/company_profile/${ticker}`));
+                if (res.data && !res.data.error) setProfile(res.data);
+            } catch (e) {
+                console.error("Profile fetch error", e);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProfile();
+    }, [ticker]);
+
+    if (loading) return <div className="animate-pulse h-64 bg-white/[0.0] rounded-lg"></div>;
+    if (!profile) return <div className="text-neutral-500 text-xs text-center py-10">Keine Unternehmensdaten verfügbar.</div>;
+
+    const formatNum = (n) => {
+        if (!n) return "-";
+        if (n > 1e12) return (n / 1e12).toFixed(2) + " Bio.";
+        if (n > 1e9) return (n / 1e9).toFixed(2) + " Mrd.";
+        if (n > 1e6) return (n / 1e6).toFixed(2) + " Mio.";
+        return n.toLocaleString();
+    };
+
+    return (
+        <div className="flex flex-col gap-6 p-2 h-full overflow-y-auto custom-scrollbar">
+            <div>
+                <h3 className="text-xl font-serif italic text-white mb-1">Unternehmensprofil</h3>
+                <p className="text-[9px] tracking-[0.2em] font-bold text-neutral-600 uppercase">Grobe Informationen</p>
+            </div>
+
+            <div className="flex flex-col gap-6">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col">
+                        <div className="text-[8px] text-[#d4af37] uppercase tracking-widest mb-1 opacity-70">Sektor</div>
+                        <div className="text-sm text-neutral-200 font-medium">{translateSector(profile.sector)}</div>
+                    </div>
+                    <div className="flex flex-col">
+                        <div className="text-[8px] text-[#d4af37] uppercase tracking-widest mb-1 opacity-70">Industrie</div>
+                        <div className="text-sm text-neutral-200 font-medium truncate" title={profile.industry}>{translateSector(profile.industry)}</div>
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-between border-b border-white/[0.1] pb-2">
+                    <div>
+                        <div className="text-[8px] text-neutral-500 uppercase tracking-widest mb-1">Marktkapitalisierung</div>
+                        <div className="text-lg text-white font-serif italic">{formatNum(profile.marketCap)}</div>
+                    </div>
+                    <Briefcase className="w-4 h-4 text-neutral-700" />
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                    <div className="text-center">
+                        <div className="text-[7px] text-neutral-500 uppercase tracking-widest mb-1">KGV (PE)</div>
+                        <div className="text-sm text-neutral-200 font-mono">{profile.peRatio?.toFixed(2) || '-'}</div>
+                    </div>
+                    <div className="text-center">
+                        <div className="text-[7px] text-neutral-500 uppercase tracking-widest mb-1">Div. Rendite</div>
+                        <div className="text-sm text-neutral-200 font-mono">{(profile.dividendYield * 100).toFixed(2)}%</div>
+                    </div>
+                    <div className="text-center">
+                        <div className="text-[7px] text-neutral-500 uppercase tracking-widest mb-1">Mitarbeiter</div>
+                        <div className="text-sm text-neutral-200 font-mono">{formatNum(profile.employees)}</div>
+                    </div>
+                </div>
+
+                <div className="mt-2">
+                    <div className="text-[8px] text-neutral-500 uppercase tracking-widest mb-2">Beschreibung</div>
+                    <p className="text-[11px] leading-relaxed text-neutral-400 font-light text-justify max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                        {profile.description}
+                    </p>
+                </div>
+
+                <div className="flex items-center gap-2 mt-auto pt-4 border-t border-white/[0.05]">
+                    <Globe className="w-3 h-3 text-neutral-600" />
+                    <span className="text-[9px] text-neutral-500">{profile.city}, {profile.country}</span>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- Sub-Component: Stock News Content ---
+const StockNewsContent = ({ ticker }) => {
+    const [news, setNews] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchNews = async () => {
+            setLoading(true);
+            try {
+                const res = await axios.get(apiUrl(`/ticker_news/${ticker}`));
+                if (Array.isArray(res.data)) setNews(res.data);
+            } catch (e) {
+                console.error("News fetch error", e);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchNews();
+    }, [ticker]);
+
+    if (loading) return <div className="text-[9px] text-neutral-500 py-2 text-center animate-pulse">Lade Nachrichten...</div>;
+    if (!news || news.length === 0) return <div className="text-[9px] text-neutral-500 py-2 text-center">Keine aktuellen Nachrichten gefunden.</div>;
+
+    return (
+        <div className="flex flex-col gap-4">
+            {news.map((item, i) => (
+                <a key={i} href={item.link} target="_blank" rel="noopener noreferrer" className="group flex flex-col gap-1 pb-3 border-b border-white/[0.05] last:border-0 hover:opacity-100 opacity-70 transition-opacity">
+                    <div className="flex items-center justify-end mb-1">
+                        {/* Source/Publisher removed as requested */}
+                        <span className="text-[10px] text-neutral-400 font-mono">{item.date}</span>
+                    </div>
+                    <h4 className="text-[11px] text-neutral-200 font-medium leading-relaxed group-hover:text-white transition-colors line-clamp-2">
+                        {item.title}
+                    </h4>
+                </a>
+            ))}
+        </div>
+    );
+};
+
+// --- Sub-Component: Stock Fundamentals Content ---
+// --- Sub-Component: Stock Fundamentals Content (Merged with Extended) ---
+const StockFundamentalsContent = ({ ticker }) => {
+    const [profile, setProfile] = useState(null);
+    const [extended, setExtended] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                // Fetch both in parallel with allSettled to avoid one failure blocking the other
+                const results = await Promise.allSettled([
+                    axios.get(apiUrl(`/company_profile/${ticker}`)),
+                    axios.get(apiUrl(`/company_financials/${ticker}`))
+                ]);
+
+                const [resProfile, resExtended] = results;
+
+                if (resProfile.status === 'fulfilled' && resProfile.value.data && !resProfile.value.data.error) {
+                    setProfile(resProfile.value.data);
+                } else {
+                    console.warn("Profile fetch failed or empty", resProfile);
+                }
+
+                if (resExtended.status === 'fulfilled' && resExtended.value.data && !resExtended.value.data.error) {
+                    setExtended(resExtended.value.data);
+                } else {
+                    console.warn("Extended financials fetch failed or empty", resExtended);
+                }
+
+            } catch (e) {
+                console.error("Fundamentals fetch error (unexpected)", e);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [ticker]);
+
+    if (loading) return <div className="text-[9px] text-neutral-500 py-2 text-center animate-pulse">Lade Daten...</div>;
+    if (!profile) return <div className="text-[9px] text-neutral-500 py-2 text-center">Keine Daten verfügbar.</div>;
+
+    const formatCurr = (v) => v ? v.toLocaleString('de-DE', { style: 'currency', currency: profile.currency || 'USD' }) : '-';
+    // const formatNum = (v) => v ? v.toLocaleString('de-DE') : '-'; // Duplicate helper
+    const formatPct = (v) => v ? (v * 100).toFixed(2) + '%' : '-';
+    const formatLarge = (n) => {
+        if (!n) return "-";
+        if (n > 1e12) return (n / 1e12).toFixed(2) + " Bio.";
+        if (n > 1e9) return (n / 1e9).toFixed(2) + " Mrd.";
+        if (n > 1e6) return (n / 1e6).toFixed(2) + " Mio.";
+        return n.toLocaleString();
+    };
+
+    const Section = ({ title, children }) => (
+        <div className="flex flex-col gap-2 mb-4 last:mb-0">
+            <h4 className="text-[11px] font-bold text-[#d4af37] uppercase tracking-widest border-b border-white/[0.1] pb-1">{title}</h4>
+            <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                {children}
+            </div>
+        </div>
+    );
+
+    const Item = ({ label, value }) => (
+        <div className="flex flex-col">
+            <span className="text-[9px] text-neutral-500 uppercase">{label}</span>
+            <span className="text-[12px] text-neutral-200 font-mono truncate">{value}</span>
+        </div>
+    );
+
+    return (
+        <div className="flex flex-col pr-1 gap-6">
+            {/* --- Basic Fundamentals --- */}
+            <div>
+                <Section title="Kurs">
+                    <Item label="Kurs" value={formatCurr(profile.currentPrice)} />
+                    <Item label="Tagesspanne" value={`${profile.dayLow?.toFixed(2) || '-'} - ${profile.dayHigh?.toFixed(2) || '-'}`} />
+                    <Item label="Marktkap." value={formatLarge(profile.marketCap)} />
+                </Section>
+
+                <Section title="Performance">
+                    <Item label="Beta" value={profile.beta?.toFixed(2)} />
+                    <Item label="52W Spanne" value={`${profile.fiftyTwoWeekLow?.toFixed(2) || '-'} - ${profile.fiftyTwoWeekHigh?.toFixed(2) || '-'}`} />
+                    <Item label="Volumen (Ø)" value={formatLarge(profile.averageVolume)} />
+                </Section>
+
+                <Section title="Bewertung">
+                    <Item label="KGV (PE)" value={profile.peRatio?.toFixed(2)} />
+                    <Item label="KBV (PB)" value={profile.priceToBook?.toFixed(2)} />
+                    <Item label="KUV (PS)" value={profile.pricesToSales?.toFixed(2)} />
+                    <Item label="EV/EBITDA" value={profile.enterpriseToEbitda?.toFixed(2)} />
+                    <Item label="Div. Rendite" value={formatPct(profile.dividendYield)} />
+                </Section>
+
+                <Section title="Profitabilität">
+                    <Item label="Eigenkapitalrendite" value={formatPct(profile.returnOnEquity)} />
+                    <Item label="Gesamtkapitalrendite" value={formatPct(profile.returnOnAssets)} />
+                    <Item label="Gewinnmarge" value={formatPct(profile.profitMargins)} />
+                    <Item label="Operative Marge" value={formatPct(profile.operatingMargins)} />
+                </Section>
+
+                <Section title="Bilanz & GuV">
+                    <Item label="Umsatz" value={formatLarge(profile.totalRevenue)} />
+                    <Item label="Nettogewinn" value={formatLarge(profile.netIncome)} />
+                    <Item label="Cash" value={formatLarge(profile.totalCash)} />
+                    <Item label="Verschuldungsgrad" value={profile.debtToEquity?.toFixed(2)} />
+                </Section>
+            </div>
+
+            {/* --- Extended Financials (Tables) --- */}
+            {extended && (
+                <div className="flex flex-col gap-6 pt-4 border-t border-white/[0.1]">
+                    {/* 1. Annual Trends */}
+                    {extended.trends && extended.trends.length > 0 && (
+                        <div className="flex flex-col gap-2">
+                            <h4 className="text-[11px] font-bold text-[#d4af37] uppercase tracking-widest border-b border-white/[0.1] pb-1">Finanzdaten-Trend (Jährlich)</h4>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="text-[8px] text-neutral-500 uppercase tracking-wider">
+                                            <th className="font-normal pb-1">Metrik</th>
+                                            {extended.trends.slice(0, 3).map(y => <th key={y.year} className="font-normal pb-1 text-right">{y.year}</th>)}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/[0.05]">
+                                        <tr className="group">
+                                            <td className="py-1 text-[9px] text-neutral-300">Umsatz</td>
+                                            {extended.trends.slice(0, 3).map(y => <td key={y.year} className="py-1 text-[9px] text-right font-mono text-neutral-400">{formatLarge(y.revenue)}</td>)}
+                                        </tr>
+                                        <tr className="group">
+                                            <td className="py-1 text-[9px] text-neutral-300">Netto</td>
+                                            {extended.trends.slice(0, 3).map(y => <td key={y.year} className="py-1 text-[9px] text-right font-mono text-neutral-400">{formatLarge(y.netIncome)}</td>)}
+                                        </tr>
+                                        <tr className="group">
+                                            <td className="py-1 text-[9px] text-neutral-300">FCF</td>
+                                            {extended.trends.slice(0, 3).map(y => <td key={y.year} className="py-1 text-[9px] text-right font-mono text-neutral-400">{formatLarge(y.fcf)}</td>)}
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 2. Dividend History */}
+                    {extended.dividends && extended.dividends.length > 0 && (
+                        <div className="flex flex-col gap-2">
+                            <h4 className="text-[11px] font-bold text-[#d4af37] uppercase tracking-widest border-b border-white/[0.1] pb-1">Dividendenhistorie</h4>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="text-[8px] text-neutral-500 uppercase tracking-wider">
+                                            <th className="font-normal pb-1">Zahltag</th>
+                                            <th className="font-normal pb-1 text-right">Dividende</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/[0.05]">
+                                        {extended.dividends.slice(0, 5).map((d, i) => (
+                                            <tr key={i}>
+                                                <td className="py-1 text-[9px] text-neutral-300 font-mono">{d.date}</td>
+                                                <td className="py-1 text-[9px] text-right text-[#d4af37] font-mono">{d.amount.toFixed(4)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 3. Insider Trades */}
+                    {extended.insiders && extended.insiders.length > 0 && (
+                        <div className="flex flex-col gap-2">
+                            <h4 className="text-[11px] font-bold text-[#d4af37] uppercase tracking-widest border-b border-white/[0.1] pb-1">Insider Trades</h4>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="text-[8px] text-neutral-500 uppercase tracking-wider">
+                                            <th className="font-normal pb-1">Datum</th>
+                                            <th className="font-normal pb-1">Insider</th>
+                                            <th className="font-normal pb-1 text-right">Wert</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/[0.05]">
+                                        {extended.insiders.slice(0, 5).map((t, i) => (
+                                            <tr key={i} className="group hover:opacity-100 opacity-80">
+                                                <td className="py-1 text-[9px] text-neutral-500 font-mono">{t.date}</td>
+                                                <td className="py-1 text-[9px] text-neutral-300 truncate max-w-[80px]" title={t.insider}>
+                                                    <div className="font-medium truncate">{t.insider}</div>
+                                                </td>
+                                                <td className={`py-1 text-[9px] text-right font-mono ${t.shares > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {formatLarge(t.value)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
+// --- Sub-Component: Stock Extended Financials (Trend, Dividends, Insider) ---
+const StockFinancialsExtended = ({ ticker }) => {
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const res = await axios.get(apiUrl(`/company_financials/${ticker}`));
+                if (res.data && !res.data.error) setData(res.data);
+            } catch (e) {
+                console.error("Advanced financials fetch error", e);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [ticker]);
+
+    if (loading) return <div className="text-[9px] text-neutral-500 py-2 text-center animate-pulse">Lade erweiterte Daten...</div>;
+    if (!data) return <div className="text-[9px] text-neutral-500 py-2 text-center">Keine erweiterten Daten verfügbar.</div>;
+
+    const { trends, dividends, insiders } = data;
+
+    const formatNum = (n) => {
+        if (!n) return "-";
+        if (n > 1e9) return (n / 1e9).toFixed(2) + " Mrd.";
+        if (n > 1e6) return (n / 1e6).toFixed(2) + " Mio.";
+        return n.toLocaleString();
+    };
+
+    return (
+        <div className="flex flex-col gap-6 pr-1">
+
+            {/* 1. Annual Trends */}
+            {trends && trends.length > 0 && (
+                <div className="flex flex-col gap-2">
+                    <h4 className="text-[11px] font-bold text-[#d4af37] uppercase tracking-widest border-b border-white/[0.1] pb-1">Finanzdaten-Trend (Jährlich)</h4>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="text-[8px] text-neutral-500 uppercase tracking-wider">
+                                    <th className="font-normal pb-1">Metrik</th>
+                                    {trends.slice(0, 4).map(y => <th key={y.year} className="font-normal pb-1 text-right">{y.year}</th>)}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/[0.05]">
+                                <tr className="group">
+                                    <td className="py-1 text-[9px] text-neutral-300">Umsatz</td>
+                                    {trends.slice(0, 4).map(y => <td key={y.year} className="py-1 text-[9px] text-right font-mono text-neutral-400">{formatNum(y.revenue)}</td>)}
+                                </tr>
+                                <tr className="group">
+                                    <td className="py-1 text-[9px] text-neutral-300">Nettogewinn</td>
+                                    {trends.slice(0, 4).map(y => <td key={y.year} className="py-1 text-[9px] text-right font-mono text-neutral-400">{formatNum(y.netIncome)}</td>)}
+                                </tr>
+                                <tr className="group">
+                                    <td className="py-1 text-[9px] text-neutral-300">Free Cash Flow</td>
+                                    {trends.slice(0, 4).map(y => <td key={y.year} className="py-1 text-[9px] text-right font-mono text-neutral-400">{formatNum(y.fcf)}</td>)}
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* 2. Dividend History */}
+            {dividends && dividends.length > 0 && (
+                <div className="flex flex-col gap-2">
+                    <h4 className="text-[11px] font-bold text-[#d4af37] uppercase tracking-widest border-b border-white/[0.1] pb-1">Dividendenhistorie</h4>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="text-[8px] text-neutral-500 uppercase tracking-wider">
+                                    <th className="font-normal pb-1">Zahltag</th>
+                                    <th className="font-normal pb-1 text-right">Dividende</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/[0.05]">
+                                {dividends.slice(0, 5).map((d, i) => (
+                                    <tr key={i}>
+                                        <td className="py-1 text-[9px] text-neutral-300 font-mono">{d.date}</td>
+                                        <td className="py-1 text-[9px] text-right text-[#d4af37] font-mono">{d.amount.toFixed(4)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* 3. Insider Trades */}
+            {insiders && insiders.length > 0 && (
+                <div className="flex flex-col gap-2">
+                    <h4 className="text-[11px] font-bold text-[#d4af37] uppercase tracking-widest border-b border-white/[0.1] pb-1">Insider Trades</h4>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="text-[8px] text-neutral-500 uppercase tracking-wider">
+                                    <th className="font-normal pb-1">Datum</th>
+                                    <th className="font-normal pb-1">Insider</th>
+                                    <th className="font-normal pb-1 text-right">Wert</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/[0.05]">
+                                {insiders.slice(0, 5).map((t, i) => (
+                                    <tr key={i} className="group hover:opacity-100 opacity-80">
+                                        <td className="py-1 text-[9px] text-neutral-500 font-mono">{t.date}</td>
+                                        <td className="py-1 text-[9px] text-neutral-300 truncate max-w-[80px]" title={t.insider}>
+                                            <div className="font-medium">{t.insider}</div>
+                                            <div className="text-[7px] text-neutral-600">{t.transaction}</div>
+                                        </td>
+                                        <td className={`py-1 text-[9px] text-right font-mono ${t.shares > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                            {formatNum(t.value)}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+        </div>
+    );
+};
+
+// --- Sub-Component: Analysis Sidebar (NO BOXES) ---
+const AnalysisSidebar = ({ children }) => {
+    return (
+        <div className="flex flex-col gap-4 h-full">
+            {children}
+        </div>
+    );
+}
+
+const SidebarItem = ({ title, children, defaultOpen = false }) => {
+    const [isOpen, setIsOpen] = useState(defaultOpen);
+    return (
+        <div className="transition-all duration-300">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full flex items-center justify-between py-3 hover:opacity-80 transition-opacity border-b border-white/[0.1]"
+            >
+                <span className="text-sm font-serif italic text-white">{title}</span>
+                {isOpen ? <ChevronUp className="w-3 h-3 text-[#d4af37]" /> : <ChevronDown className="w-3 h-3 text-neutral-500" />}
+            </button>
+            <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? 'max-h-[1200px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div className="py-4 pl-2">
+                    {children}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const CompactMovesTable = ({ data }) => {
+    if (!data || data.length === 0) return <div className="py-4 text-center text-[9px] text-neutral-700 italic tracking-widest uppercase">Keine Daten</div>;
+    return (
+        <div className="overflow-x-auto">
+            <table className="w-full text-left">
+                <tbody className="divide-y divide-white/[0.03]">
+                    {data.slice(0, 5).map((move, i) => (
+                        <tr key={i} className="group hover:bg-white/[0.01]">
+                            <td className="px-1 py-1.5">
+                                <div className="text-[9px] font-medium text-neutral-300 group-hover:text-[#d4af37] truncate max-w-[80px]">{move.investor}</div>
+                                <div className="text-[7px] text-neutral-600 uppercase">{new Date(move.reported).toLocaleDateString()}</div>
+                            </td>
+                            <td className="px-1 py-1.5 text-right text-[8px] font-mono text-neutral-500">{(move.shares_moved / 1000000).toFixed(1)}M</td>
+                            <td className="px-1 py-1.5 text-right text-[8px] font-mono text-[#d4af37]">${(move.value_usd / 1000000).toFixed(0)}M</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+};
+
+const StockSidebarContent = ({ ticker }) => {
+    const [instData, setInstData] = useState(null);
+    const [whaleWatch, setWhaleWatch] = useState(null);
+    const [avgPriceData, setAvgPriceData] = useState(null);
+    const [largestMoves, setLargestMoves] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                // Parallel fetch
+                const [instRes, whaleRes, priceRes, movesRes] = await Promise.allSettled([
+                    axios.get(apiUrl(`/institutional/${ticker}`)),
+                    axios.get(apiUrl(`/institutional/whale_watch/${ticker}`)),
+                    axios.get(apiUrl(`/institutional/avg_price/${ticker}`)),
+                    axios.get(apiUrl(`/institutional/largest_moves/${ticker}`))
+                ]);
+
+                if (instRes.status === 'fulfilled') setInstData(instRes.value.data);
+                if (whaleRes.status === 'fulfilled') setWhaleWatch(whaleRes.value.data);
+                if (priceRes.status === 'fulfilled') setAvgPriceData(priceRes.value.data);
+                if (movesRes.status === 'fulfilled') setLargestMoves(movesRes.value.data);
+
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [ticker]);
+
+    if (loading) return null;
+    if (!instData) return null;
+
+    return (
+        <div className="flex flex-col gap-6 w-full max-w-[1600px] mx-auto pt-2">
+
+            {/* FEATURE 2: Compact List for Sidebar - CLEAN LAYOUT */}
+            <div className="flex flex-col gap-8">
+
+                {avgPriceData?.avg_entry_price > 0 && (
+                    <div className="py-2 border-b border-[#d4af37]/30 flex flex-col gap-1">
+                        <span className="text-[8px] text-[#d4af37] tracking-widest uppercase">Smart Money Floor</span>
+                        <span className="text-xl font-serif italic text-white">{avgPriceData.avg_entry_price.toLocaleString('de-DE', { style: 'currency', currency: 'USD' })}</span>
+                    </div>
+                )}
+
+                {/* Column 1: Accumulation */}
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 pb-1 border-b border-white/[0.1]">
+                        <span className="text-emerald-500 text-[10px]">↑</span>
+                        <span className="text-[8px] tracking-[0.2em] font-extrabold text-white uppercase">Akkumulation</span>
+                    </div>
+                    <CompactMovesTable data={largestMoves?.purchases} />
+                </div>
+
+                {/* Column 2: Distribution */}
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 pb-1 border-b border-white/[0.1]">
+                        <span className="text-rose-500 text-[10px]">↓</span>
+                        <span className="text-[8px] tracking-[0.2em] font-extrabold text-white uppercase">Distribution</span>
+                    </div>
+                    <CompactMovesTable data={largestMoves?.sales} />
+                </div>
+
+                {/* Column 3: Whale Watch */}
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 pb-1 border-b border-white/[0.1]">
+                        <span className="text-[#d4af37] text-[10px]">★</span>
+                        <span className="text-[8px] tracking-[0.2em] font-extrabold text-white uppercase">Whale Watch</span>
+                    </div>
+                    {/* Reuse table but style it minimally */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <tbody className="divide-y divide-white/[0.05]">
+                                {whaleWatch?.slice(0, 5).map((g, i) => {
+                                    const latest = g.history[g.history.length - 1];
+                                    if (!latest) return null;
+                                    return (
+                                        <tr key={i} className="group hover:opacity-100 opacity-80 transition-opacity">
+                                            <td className="px-0 py-2">
+                                                <div className="text-[9px] font-medium text-neutral-200 truncate max-w-[90px]">{g.fund}</div>
+                                            </td>
+                                            <td className={`px-0 py-2 text-right text-[8px] font-mono ${latest.change > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                {latest.change > 0 ? '+' : ''}{latest.change.toLocaleString()}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -380,6 +1263,16 @@ const AssetAnalysisWindow = () => {
     const name = searchParams.get('name');
     const urlCategory = searchParams.get('category');
 
+    // State for CoT Signals
+    const [cotSignals, setCotSignals] = useState([]);
+
+    const handleCotSignals = useCallback((signals) => {
+        setCotSignals(prev => {
+            if (JSON.stringify(prev) === JSON.stringify(signals)) return prev;
+            return signals;
+        });
+    }, []);
+
     // Fallback if category is missing or generic "Asset"
     const category = (urlCategory && urlCategory !== 'Asset') ? urlCategory : getCategoryByTicker(ticker);
 
@@ -391,46 +1284,85 @@ const AssetAnalysisWindow = () => {
     if (!ticker) return <div className="p-10 text-white">No asset selected.</div>;
 
     return (
-        <div className="min-h-screen bg-black text-gray-300 font-sans p-6 overflow-hidden flex flex-col relative">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6 pb-6 border-b border-gray-800">
-                <div className="flex items-center gap-4">
+        <div className="min-h-screen bg-[#050505] text-neutral-300 font-sans p-6 flex flex-col relative selection:bg-[#d4af37]/30">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row items-center justify-between mb-10 pb-6 border-b border-white/[0.05]">
+                <div className="flex items-center gap-6">
                     <button
-                        onClick={() => navigate('/trading')}
-                        className="p-2 hover:bg-gray-800 rounded-full transition-colors text-gray-400 hover:text-white"
-                        title="Back to Trading"
+                        onClick={() => navigate(-1)}
+                        className="w-10 h-10 rounded-full border border-white/[0.05] flex items-center justify-center text-neutral-500 hover:border-[#d4af37]/40 hover:text-[#d4af37] transition-all duration-700 hover:shadow-[0_0_20px_rgba(212,175,55,0.1)] group"
                     >
-                        <ArrowLeft className="w-6 h-6" />
+                        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                     </button>
-                    <h1 className="text-2xl font-bold text-white">{name}</h1>
-                    <span className="text-sm font-mono text-gray-500 bg-gray-900 px-2 py-1 rounded">{ticker}</span>
-                    {category && <span className="text-xs text-blue-400 border border-blue-900/30 px-2 py-0.5 rounded-full">{category}</span>}
+
+                    <div className="flex flex-col">
+                        <div className="flex items-center gap-4 mb-1">
+                            <h1 className="text-2xl md:text-3xl font-serif italic text-white tracking-tight">{name}</h1>
+                            <div className="px-3 py-1 rounded-full border border-[#d4af37]/30 bg-[#d4af37]/5 text-[#d4af37] text-[10px] font-bold tracking-[0.2em] uppercase">
+                                {ticker}
+                            </div>
+                        </div>
+                        <p className="text-[10px] tracking-[0.5em] text-neutral-500 uppercase font-medium">{category || 'Asset Analysis'}</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-4 mt-8 md:mt-0 text-right">
+                    <div className="flex flex-col items-end">
+                        <span className="text-[9px] tracking-[0.3em] text-[#d4af37] uppercase font-bold mb-1">Status</span>
+                        <div className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span className="text-[10px] text-neutral-500 font-light tracking-widest uppercase">Echtzeit Analyse</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Content Area - unified view */}
-            <div className="flex-1 min-h-0 flex flex-col gap-8 overflow-y-auto pb-10">
-                {/* 1. Price Chart (Full Width) */}
-                <div className="w-full min-h-[500px]">
-                    <AssetPriceChart ticker={ticker} />
-                </div>
-
-                {/* 2. Split Row: Seasonality | CoT Analysis (Conditional) */}
+            {/* Content Area */}
+            <div className="flex-1 min-h-0 flex flex-col gap-12 pb-20">
+                {/* Content Logic: 3-Column Layout for Stocks */}
                 {category === 'Aktien' ? (
-                    /* Layout for Stocks: Just Seasonality, no CoT */
-                    <div className="flex flex-col xl:flex-row gap-8 items-start min-h-[600px]">
-                        <div className="flex-1 min-w-0">
-                            <AssetSeasonalityTable ticker={ticker} />
+                    <div className="grid grid-cols-1 xl:grid-cols-4 gap-12 w-full h-full min-h-[600px] animate-fade-in">
+                        {/* 1. Left Sidebar (Expandable List) */}
+                        <div className="xl:col-span-1 min-w-[280px]">
+                            <AnalysisSidebar>
+                                <SidebarItem title="13F Files" defaultOpen={true}>
+                                    <StockSidebarContent ticker={ticker} />
+                                </SidebarItem>
+                                <SidebarItem title="Aktuelle Nachrichten" defaultOpen={false}>
+                                    <StockNewsContent ticker={ticker} />
+                                </SidebarItem>
+                                <SidebarItem title="Fundamentaldaten" defaultOpen={false}>
+                                    <StockFundamentalsContent ticker={ticker} />
+                                </SidebarItem>
+                            </AnalysisSidebar>
+                        </div>
+
+                        {/* 2. Middle: Company Info */}
+                        <div className="xl:col-span-1 min-w-[280px]">
+                            {/* Remove Box Container, just content */}
+                            <CompanyProfileView ticker={ticker} />
+                        </div>
+
+                        {/* 3. Right: Chart (TradingView) */}
+                        <div className="xl:col-span-2 flex flex-col gap-6">
+                            {searchParams.get('view') !== '13f' && (
+                                <div className="h-[600px] w-full relative border border-white/[0.05] rounded-lg overflow-hidden">
+                                    <TradingViewWidget symbol={ticker} />
+                                </div>
+                            )}
                         </div>
                     </div>
                 ) : (
-                    /* Layout for Futures/Trading: Seasonality + CoT */
-                    <div className="flex flex-col xl:flex-row gap-8 items-start min-h-[600px]">
-                        <div className="flex-1 min-w-0">
-                            <AssetSeasonalityTable ticker={ticker} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <AssetCotView ticker={ticker} category={category} />
+                    <div className="flex flex-col gap-12">
+                        {searchParams.get('view') !== '13f' && (
+                            <div className="animate-fade-in">
+                                <AssetPriceChart ticker={ticker} cotSignals={cotSignals} />
+                            </div>
+                        )}
+                        <div className="flex flex-col gap-24">
+                            <div className="animate-fade-in">
+                                <AssetCotView ticker={ticker} category={category} onSignalsChange={handleCotSignals} />
+                            </div>
                         </div>
                     </div>
                 )}
@@ -439,350 +1371,5 @@ const AssetAnalysisWindow = () => {
     );
 };
 
-const AssetSeasonalityTable = ({ ticker }) => {
-    const [results, setResults] = useState(null);
-    const [seasonalTrend, setSeasonalTrend] = useState([]);
-    const [highlightRange, setHighlightRange] = useState(null);
-    const [customStats, setCustomStats] = useState(null);
-    const [loadingCustom, setLoadingCustom] = useState(false);
-
-    // Split Loading States
-    const [loadingResults, setLoadingResults] = useState(true);
-    const [loadingTrend, setLoadingTrend] = useState(true);
-
-    const [lookback, setLookback] = useState(10);
-    const [winRate, setWinRate] = useState(70);
-    const [filterPostElection, setFilterPostElection] = useState(false);
-    const [filterOddYears, setFilterOddYears] = useState(false);
-    const [exclude2020, setExclude2020] = useState(false);
-    const [filterElection, setFilterElection] = useState(false);
-    const [filterMidterm, setFilterMidterm] = useState(false);
-    const [filterPreElection, setFilterPreElection] = useState(false);
-
-    const formatDate = (dateStr) => {
-        if (!dateStr) return '';
-        const date = new Date(dateStr);
-        return date.toLocaleDateString('de-DE', { day: '2-digit', month: 'short' });
-    };
-
-    const handlePatternClick = (pattern) => {
-        try {
-            const getMonthName = (mIdx) => ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][mIdx];
-
-            // pattern.start_str is "2023-01-20"
-            const pStart = new Date(pattern.start_str);
-            const pEnd = new Date(pattern.end_str);
-
-            const startKey = `${getMonthName(pStart.getMonth())} ${String(pStart.getDate()).padStart(2, '0')}`;
-            const endKey = `${getMonthName(pEnd.getMonth())} ${String(pEnd.getDate()).padStart(2, '0')}`;
-
-            setHighlightRange({ start: startKey, end: endKey });
-            setCustomStats(null);
-        } catch (e) {
-            console.error("Date parse error", e);
-        }
-    };
-
-    const handleRangeSelect = async (startLabel, endLabel) => {
-        // startLabel: "Jan 15", endLabel: "Mar 20"
-        console.log("Selected:", startLabel, endLabel);
-
-        setHighlightRange({ start: startLabel, end: endLabel });
-        setLoadingCustom(true);
-        setCustomStats(null);
-
-        try {
-            // Convert Labels back to M-D for backend
-            // Map "Jan" -> 01
-            const monthMap = { "Jan": "01", "Feb": "02", "Mar": "03", "Apr": "04", "May": "05", "Jun": "06", "Jul": "07", "Aug": "08", "Sep": "09", "Oct": "10", "Nov": "11", "Dec": "12" };
-
-            const parseMD = (lbl) => {
-                const [mStr, dStr] = lbl.split(' ');
-                return `${monthMap[mStr]}-${dStr}`;
-            };
-
-            const startMD = parseMD(startLabel);
-            const endMD = parseMD(endLabel);
-
-            const response = await axios.post(apiUrl('/evaluate_pattern'), {
-                ticker: ticker,
-                start_md: startMD,
-                end_md: endMD,
-                lookback_years: lookback,
-                filter_mode: filterPostElection ? 'post_election' : null,
-                filter_odd_years: filterOddYears,
-                exclude_2020: exclude2020,
-                filter_election: filterElection,
-                filter_midterm: filterMidterm,
-                filter_pre_election: filterPreElection,
-                filter_post_election: filterPostElection
-            });
-
-            if (response.data.status === "success" && response.data.stats) {
-                setCustomStats(response.data.stats);
-            }
-
-        } catch (e) {
-            console.error("Custom analysis failed", e);
-        } finally {
-            setLoadingCustom(false);
-        }
-    };
-
-    // Fetch Trend (Fast)
-    useEffect(() => {
-        setLoadingTrend(true);
-        axios.post(apiUrl('/ticker_seasonality_trend'), {
-            ticker: ticker,
-            lookback_years: lookback,
-            filter_mode: filterPostElection ? 'post_election' : null,
-            filter_odd_years: filterOddYears,
-            exclude_2020: exclude2020,
-            filter_election: filterElection,
-            filter_midterm: filterMidterm,
-            filter_pre_election: filterPreElection,
-            filter_post_election: filterPostElection
-        })
-            .then(res => {
-                setSeasonalTrend(res.data.seasonal_trend || []);
-                setLoadingTrend(false);
-            })
-            .catch(err => {
-                console.error(err);
-                setLoadingTrend(false);
-            });
-    }, [ticker, lookback, filterPostElection, filterOddYears, exclude2020, filterElection, filterMidterm, filterPreElection]);
-
-    // Fetch Results (Calculated)
-    useEffect(() => {
-        if (!ticker) return;
-
-        setLoadingResults(true);
-        axios.post(apiUrl('/analyze_ticker'), {
-            ticker: ticker,
-            lookback_years: lookback,
-            min_win_rate: winRate,
-            filter_mode: filterPostElection ? 'post_election' : null,
-            filter_odd_years: filterOddYears,
-            exclude_2020: exclude2020,
-            filter_election: filterElection,
-            filter_midterm: filterMidterm,
-            filter_pre_election: filterPreElection,
-            filter_post_election: filterPostElection
-        })
-            .then(response => {
-                setResults(response.data.results);
-                setLoadingResults(false);
-            })
-            .catch(error => {
-                console.error("Error fetching analysis:", error);
-                setLoadingResults(false);
-            });
-    }, [ticker, lookback, winRate, filterPostElection, filterOddYears, exclude2020, filterElection, filterMidterm, filterPreElection]);
-
-    return (
-        <div className="flex flex-col gap-6">
-
-            {/* Custom Analysis Result Alert */}
-            {loadingCustom && (
-                <div className="bg-blue-900/30 border border-blue-800 p-4 rounded-xl flex items-center justify-center">
-                    <Loader2 className="animate-spin text-blue-400 mr-2" />
-                    <span className="text-blue-200">Berechne Daten für ausgewählten Zeitraum...</span>
-                </div>
-            )}
-
-            {customStats && (
-                <div className="bg-emerald-900/20 border border-emerald-800 p-4 rounded-xl animate-in fade-in slide-in-from-top-2">
-                    <div className="flex justify-between items-start mb-4">
-                        <h4 className="text-emerald-400 font-semibold flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4" />
-                            Analyse: {formatDate(customStats.start_str)} - {formatDate(customStats.end_str)}
-                        </h4>
-                        <button onClick={() => setCustomStats(null)} className="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
-                    </div>
-
-                    {/* Summary Cards */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-6">
-                        <div className="bg-black/40 p-3 rounded-lg border border-white/5">
-                            <span className="text-gray-400 block text-xs uppercase tracking-wider mb-1">Trefferquote Long</span>
-                            <span className="text-white font-bold text-xl">{customStats.win_rate.toFixed(1)}%</span>
-                        </div>
-                        <div className="bg-black/40 p-3 rounded-lg border border-white/5">
-                            <span className="text-gray-400 block text-xs uppercase tracking-wider mb-1">Ø Gewinn</span>
-                            <span className={`font-bold text-xl ${customStats.avg_return >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                {customStats.avg_return > 0 ? '+' : ''}{customStats.avg_return.toFixed(2)}%
-                            </span>
-                        </div>
-                        <div className="bg-black/40 p-3 rounded-lg border border-white/5">
-                            <span className="text-gray-400 block text-xs uppercase tracking-wider mb-1">Bester Trade</span>
-                            <span className="text-green-400 font-bold text-xl">+{customStats.max_return.toFixed(2)}%</span>
-                        </div>
-                        <div className="bg-black/40 p-3 rounded-lg border border-white/5">
-                            <span className="text-gray-400 block text-xs uppercase tracking-wider mb-1">Schlechtester Trade</span>
-                            <span className="text-red-400 font-bold text-xl">{customStats.min_return.toFixed(2)}%</span>
-                        </div>
-                    </div>
-
-                    {/* Detailed Yearly Trades Table */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-xs text-left">
-                            <thead>
-                                <tr className="border-b border-gray-700 text-gray-400">
-                                    <th className="py-2 px-2 font-medium">Jahr</th>
-                                    <th className="py-2 px-2 font-medium text-right">Einstieg</th>
-                                    <th className="py-2 px-2 font-medium text-right">Ausstieg</th>
-                                    <th className="py-2 px-2 font-medium text-right">Diff</th>
-                                    <th className="py-2 px-2 font-medium text-right">% GuV</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {customStats.yearly_trades.map((trade, idx) => {
-                                    const diff = trade.exit_price - trade.entry_price;
-                                    const isWin = trade.gain_percent > 0;
-                                    return (
-                                        <tr key={idx} className="border-b border-gray-800/50 hover:bg-white/5 transition-colors">
-                                            <td className="py-2 px-2 text-gray-300">{trade.year}</td>
-                                            <td className="py-2 px-2 text-right text-gray-400">{trade.entry_price.toFixed(2)}</td>
-                                            <td className="py-2 px-2 text-right text-gray-400">{trade.exit_price.toFixed(2)}</td>
-                                            <td className={`py-2 px-2 text-right font-medium ${diff >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                                {diff > 0 ? '+' : ''}{diff.toFixed(2)}
-                                            </td>
-                                            <td className={`py-2 px-2 text-right font-bold ${isWin ? 'text-green-400' : 'text-red-400'}`}>
-                                                {trade.gain_percent > 0 ? '+' : ''}{trade.gain_percent.toFixed(2)}%
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
-
-            <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                        <Calendar className="w-5 h-5 text-blue-500" />
-                        Saisonalität
-                    </h2>
-                </div>
-
-                {/* New Settings Panel */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-black/30 p-5 rounded-xl border border-white/5 backdrop-blur-sm">
-                    {/* Filters Column */}
-                    <div className="space-y-3">
-                        <h3 className="text-xs font-semibold text-blue-400 uppercase tracking-wider flex items-center gap-2">
-                            <Filter className="w-3 h-3" />
-                            Filter & Einstellungen
-                        </h3>
-                        {/* Grid for Checkboxes */}
-                        <div className="grid grid-cols-2 gap-x-2 gap-y-2">
-                            {/* Ungerade */}
-                            <label className={`flex items-center gap-3 cursor-pointer px-3 py-2 rounded-lg border transition-all ${filterOddYears ? 'bg-blue-900/20 border-blue-500/50' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
-                                <input type="checkbox" checked={filterOddYears} onChange={(e) => setFilterOddYears(e.target.checked)} className="peer w-3.5 h-3.5 bg-gray-800 border-gray-600 rounded" />
-                                <span className={`text-xs select-none ${filterOddYears ? 'text-blue-100' : 'text-gray-300'}`}>Ungerade Jahre</span>
-                            </label>
-
-                            {/* Exclude 2020 */}
-                            <label className={`flex items-center gap-3 cursor-pointer px-3 py-2 rounded-lg border transition-all ${exclude2020 ? 'bg-red-900/20 border-red-500/50' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
-                                <input type="checkbox" checked={exclude2020} onChange={(e) => setExclude2020(e.target.checked)} className="peer w-3.5 h-3.5 bg-gray-800 border-gray-600 rounded" />
-                                <span className={`text-xs select-none ${exclude2020 ? 'text-red-100' : 'text-gray-300'}`}>2020 ignorieren</span>
-                            </label>
-
-                            {/* Election */}
-                            <label className={`flex items-center gap-3 cursor-pointer px-3 py-2 rounded-lg border transition-all ${filterElection ? 'bg-indigo-900/20 border-indigo-500/50' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
-                                <input type="checkbox" checked={filterElection} onChange={(e) => setFilterElection(e.target.checked)} className="peer w-3.5 h-3.5 bg-gray-800 border-gray-600 rounded" />
-                                <span className={`text-xs select-none ${filterElection ? 'text-indigo-100' : 'text-gray-300'}`}>Election Years</span>
-                            </label>
-
-                            {/* Post-Election */}
-                            <label className={`flex items-center gap-3 cursor-pointer px-3 py-2 rounded-lg border transition-all ${filterPostElection ? 'bg-indigo-900/20 border-indigo-500/50' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
-                                <input type="checkbox" checked={filterPostElection} onChange={(e) => setFilterPostElection(e.target.checked)} className="peer w-3.5 h-3.5 bg-gray-800 border-gray-600 rounded" />
-                                <span className={`text-xs select-none ${filterPostElection ? 'text-indigo-100' : 'text-gray-300'}`}>Post-Election</span>
-                            </label>
-
-                            {/* Midterm */}
-                            <label className={`flex items-center gap-3 cursor-pointer px-3 py-2 rounded-lg border transition-all ${filterMidterm ? 'bg-indigo-900/20 border-indigo-500/50' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
-                                <input type="checkbox" checked={filterMidterm} onChange={(e) => setFilterMidterm(e.target.checked)} className="peer w-3.5 h-3.5 bg-gray-800 border-gray-600 rounded" />
-                                <span className={`text-xs select-none ${filterMidterm ? 'text-indigo-100' : 'text-gray-300'}`}>Midterm Years</span>
-                            </label>
-
-                            {/* Pre-Election */}
-                            <label className={`flex items-center gap-3 cursor-pointer px-3 py-2 rounded-lg border transition-all ${filterPreElection ? 'bg-indigo-900/20 border-indigo-500/50' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
-                                <input type="checkbox" checked={filterPreElection} onChange={(e) => setFilterPreElection(e.target.checked)} className="peer w-3.5 h-3.5 bg-gray-800 border-gray-600 rounded" />
-                                <span className={`text-xs select-none ${filterPreElection ? 'text-indigo-100' : 'text-gray-300'}`}>Pre-Election</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    {/* Parameters Column */}
-                    <div className="space-y-3">
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                            <Settings2 className="w-3 h-3" />
-                            Parameter
-                        </h3>
-                        <div className="space-y-4 bg-black/20 p-4 rounded-lg border border-white/5">
-                            {/* Years Slider */}
-                            <div className="flex items-center gap-4">
-                                <span className="text-sm text-gray-400 w-24">Zeitraum</span>
-                                <input
-                                    type="range"
-                                    min="5"
-                                    max="50"
-                                    value={lookback}
-                                    onChange={(e) => setLookback(Number(e.target.value))}
-                                    className="flex-1 h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:scale-110 transition-all"
-                                />
-                                <span className="text-white font-mono text-sm w-12 text-right bg-white/5 px-2 py-0.5 rounded border border-white/10">{lookback} J</span>
-                            </div>
-                            {/* WinRate Slider */}
-                            <div className="flex items-center gap-4">
-                                <span className="text-sm text-gray-400 w-24">Min. Treffer</span>
-                                <input
-                                    type="range"
-                                    min="50"
-                                    max="100"
-                                    value={winRate}
-                                    onChange={(e) => setWinRate(Number(e.target.value))}
-                                    className="flex-1 h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:bg-emerald-500 [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:scale-110 transition-all"
-                                />
-                                <span className="text-white font-mono text-sm w-12 text-right bg-white/5 px-2 py-0.5 rounded border border-white/10">{winRate}%</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-
-            <div className="flex-1 overflow-auto border border-gray-800 rounded-xl bg-black/50 min-h-[400px]">
-                {loadingResults ? (
-                    <div className="h-full flex items-center justify-center text-gray-500">
-                        <Loader2 className="w-6 h-6 animate-spin mr-2" />
-                        Analyzing...
-                    </div>
-                ) : (
-                    <ResultsTable results={results || []} onRowClick={handlePatternClick} />
-                )}
-            </div>
-
-            <div className="h-[600px]">
-                {loadingTrend ? (
-                    <div className="h-full flex items-center justify-center text-gray-500 bg-black border border-gray-800 rounded-xl">
-                        <Loader2 className="w-6 h-6 animate-spin mr-2" />
-                        Loading Seasonal Trend...
-                    </div>
-                ) : (
-                    seasonalTrend && seasonalTrend.length > 0 &&
-                    <SeasonalChart
-                        data={seasonalTrend}
-                        lookback={lookback}
-                        highlightRange={highlightRange}
-                        onRangeSelect={handleRangeSelect}
-                    />
-                )}
-            </div>
-        </div >
-    );
-};
-
 export default AssetAnalysisWindow;
+
